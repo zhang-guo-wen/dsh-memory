@@ -60,7 +60,7 @@ function StateBlock({ state, t }: { readonly state: MemorySectionState; readonly
   const index = report.index
   return (
     <div className={css.state}>
-      <StateRow label={t('directory.label')} value={<code className={css.path}>{report.directory}</code>} />
+      <StateRow label={t('status.resolved')} value={<code className={css.path}>{report.directory}</code>} />
       <StateRow
         label={t('status.title')}
         value={report.exists ? t('status.exists') : t('status.missing')}

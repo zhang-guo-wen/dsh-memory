@@ -98,6 +98,10 @@ describe('memory settings section', () => {
 
   it('reports what the Host resolved and holds', () => {
     const html = render('zh')
+    // The field holds a template; the state block names the resolved directory,
+    // so the two are never read as the same thing.
+    expect(html).toContain(escaped(zh['directory.label']))
+    expect(html).toContain(escaped(zh['status.resolved']))
     expect(html).toContain(escaped('/home/u/.claude/projects/-home-u-repo/memory'))
     expect(html).toContain('12')
     expect(html).toContain('2.0K')
