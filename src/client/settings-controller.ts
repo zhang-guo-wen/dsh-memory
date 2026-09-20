@@ -206,16 +206,28 @@ export class MemorySectionController {
     if (!this.canWrite()) return
     this.enabled = value
     this.publish()
-    void this.scope.set('enabled', value)
+    void this.commit('enabled', value)
   }
 
   private setClaudeCompatible(value: boolean): void {
     if (!this.canWrite()) return
     this.claudeCompatible = value
     this.browser = { kind: 'closed' }
-    this.notice = null
     this.publish()
-    void this.scope.set('claudeCompatible', value)
+    void this.commit('claudeCompatible', value)
+  }
+
+  /**
+   * Commit one settings field and re-read the Host's answer.
+   *
+   * A Host that does not know the field — an older plugin build still loaded in
+   * the process — leaves the document unchanged, so the switch must snap back to
+   * what the Host actually holds instead of showing a write that never took.
+   */
+  private async commit(field: keyof MemoryFlags, value: unknown): Promise<void> {
+    await this.run(async () => { await this.scope.set(field, value) })
+    this.readFlags()
+    this.publish()
   }
 
   private saveDirectory(): void {
@@ -224,7 +236,7 @@ export class MemorySectionController {
     this.savedDirectory = directory
     this.notice = null
     this.publish()
-    void this.scope.set('directory', directory)
+    void this.commit('directory', directory)
   }
 
   private editIndex(content: string): void {
