@@ -86,6 +86,11 @@ pnpm dsh --profile web --dump-config | Select-String dsh-memory                 
 `patchReload: live` 的 profile 会在清单变化后热重组；浏览器仍需硬刷新（boot 图是页面加载时组装的）。
 client 产物变了还要 bump `HANDOFF_ID` 或强刷。
 
+**host 半边是进程内模块：重建 `lib/index.mjs` 不会替换正在运行的那份代码。** 只有 `dsh plugin add/remove` 造成的
+重组才会把它 import 进进程，之后改源码必须**重启宿主**才生效。判断运行中的是哪一版：`dsh --profile web --dump-config`
+只反映组合，不反映进程内代码；直接看行为（如 `memoryStore.status` 报的目录、设置页里有没有新字段）更可靠。
+client 半边相反：bundle 按内容 rev 提供，刷新页面就会取到新的。
+
 ## 发版
 
 `lib/` 提交进仓库，所以**发版 = 改版本号 + 构建 + 提交产物 + 打 tag**。
