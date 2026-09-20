@@ -71,12 +71,13 @@ interface MemoryResult {
 }
 
 /**
- * Register the `memory` tool for the lifetime of `ctx`.
- * @param ctx - plugin context; the registration is disposed with it.
+ * Register the `memory` tool.
+ * @param ctx - plugin context.
  * @param runtime - live settings and the session's memory directory.
+ * @returns the disposer withdrawing the registration; the caller owns its lifetime.
  */
-export function registerMemoryTool(ctx: Context, runtime: MemoryRuntime): void {
-  ctx.effect(() => ctx.tools.register(defineTool({
+export function registerMemoryTool(ctx: Context, runtime: MemoryRuntime): () => void {
+  return ctx.tools.register(defineTool({
     name: MEMORY_TOOL_NAME,
     description: DESCRIPTION,
     parameters: {
@@ -152,7 +153,7 @@ export function registerMemoryTool(ctx: Context, runtime: MemoryRuntime): void {
       const message = await runCommand(store, args)
       return { command: args.command, path: args.path ?? args.new_path ?? MEMORY_PATH_PREFIX, message }
     },
-  })), 'memory: tool')
+  }))
 }
 
 /**

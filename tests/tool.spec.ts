@@ -41,6 +41,11 @@ describe('registerMemoryTool', () => {
     expect(tool.parameters.required).toEqual(['command'])
   })
 
+  it('returns the registry disposer, so the caller owns the tool lifetime', () => {
+    const { ctx } = recordingCtx()
+    expect(typeof registerMemoryTool(ctx, runtimeFor('/memories'))).toBe('function')
+  })
+
   it('runs a command against the session project directory and renders its reply', async () => {
     const { ctx, tools } = recordingCtx()
     const root = await tempRoot()

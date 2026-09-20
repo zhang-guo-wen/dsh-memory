@@ -99,4 +99,19 @@ describe('real Loader composition', () => {
     expect(loaded.tools.get('memory')).toBeUndefined()
     expect(loaded.get('memoryStore')).toBeUndefined()
   })
+
+  it('withdraws the tool when memory is off, and keeps the settings page working', async () => {
+    const memoryRoot = await mkdtemp(join(tmpdir(), 'dsh-memory-off-'))
+    const loaded = await loadYaml([
+      "- name: '@deepseek-ai/dsh-system-prompt'",
+      "- name: '@deepseek-ai/dsh-tools'",
+      "- name: '@zhang-guo-wen/dsh-memory'",
+      '  config:',
+      '    enabled: false',
+      '    directory: ' + JSON.stringify(memoryRoot),
+    ])
+    expect(loaded.tools.get('memory')).toBeUndefined()
+    expect((await loaded.memoryStore.status({})).enabled).toBe(false)
+    await rm(memoryRoot, { recursive: true, force: true })
+  })
 })

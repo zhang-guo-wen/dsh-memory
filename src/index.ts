@@ -81,14 +81,31 @@ export const Config: Schema<Config> = z.object({
  * Register the memory settings namespace, the `memory` tool, the contributor
  * that folds the index into a session's first request, and the settings page's
  * Remote namespace.
+ *
+ * The tool follows the settings switch: turning memory off withdraws the tool
+ * as well as stopping the injection, so a disabled deployment neither spends
+ * request tokens on the schema nor lets the model write memories.
  * @param ctx - plugin context; every registration is disposed with it.
  * @param config - composition defaults and caps.
  */
 export function apply(ctx: Context, config: Config = {}): void {
-  const runtime = registerMemorySettings(ctx, config)
-  registerMemoryTool(ctx, runtime)
+  let withdrawTool: (() => void) | undefined
+  const syncTool = (): void => {
+    const wanted = runtime.enabled()
+    if (wanted && withdrawTool === undefined) withdrawTool = registerMemoryTool(ctx, runtime)
+    if (!wanted && withdrawTool !== undefined) {
+      withdrawTool()
+      withdrawTool = undefined
+    }
+  }
+  const runtime = registerMemorySettings(ctx, config, syncTool)
+  syncTool()
   memoryInstructionListener(ctx, runtime)
   // The Remote owner registers itself as `ctx.memoryStore` on construction; the
   // service registry keeps the instance alive for this fiber's lifetime.
   void new MemoryRemote(ctx, runtime)
+  ctx.effect(() => () => {
+    withdrawTool?.()
+    withdrawTool = undefined
+  }, 'memory: tool lifetime')
 }

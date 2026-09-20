@@ -102,9 +102,15 @@ interface SettingsProviderLike {
  * owner's value — this plugin never throws.
  * @param ctx - plugin context (uses `ctx.get('settings')`-equivalent injection when present).
  * @param config - composition defaults and caps.
+ * @param onCommitted - observer invoked after each committed change, so a live
+ *   registration can follow the switch.
  * @returns the live runtime.
  */
-export function registerMemorySettings(ctx: Context, config: MemoryConfig = {}): MemoryRuntime {
+export function registerMemorySettings(
+  ctx: Context,
+  config: MemoryConfig = {},
+  onCommitted?: (flags: MemorySettingsFlags) => void,
+): MemoryRuntime {
   const base: MemorySettingsFlags = {
     enabled: config.enabled ?? true,
     directory: config.directory ?? DEFAULT_MEMORY_DIRECTORY,
@@ -119,7 +125,10 @@ export function registerMemorySettings(ctx: Context, config: MemoryConfig = {}):
         { base, applies: 'live' },
       )
       flags = () => ({ ...scope.get() })
-      scope.watch((next) => { flags = () => ({ ...next }) })
+      scope.watch((next) => {
+        flags = () => ({ ...next })
+        onCommitted?.({ ...next })
+      })
     } catch {
       // Another owner already registered this namespace; keep the base.
     }

@@ -18,7 +18,8 @@ composition spec boots the checkout's own Loader, system-prompt registry, and to
 | `settings.spec.ts` | `~` and `{project}` resolution, project naming, worktree resolution, the settings namespace and its composition fallback |
 | `instructions.spec.ts` | The rendered protocol text, the message source, folding into the first step that carries a message, once-per-Session and resumed-Session behavior |
 | `tool.spec.ts` | The registered tool's parameters and reply rendering, `runCommand` per verb, missing-field and refused-path answers |
-| `loader-composition.spec.ts` | A real Loader composition: the row activates, the tool registers, the `memoryStore` Remote answers, and a disabled row contributes nothing |
+| `loader-composition.spec.ts` | A real Loader composition: the row activates, the tool registers, the `memoryStore` Remote answers, a disabled row contributes nothing, and `enabled: false` withdraws the tool while the settings page still reports |
+| `memory-section.spec.tsx` | The settings section rendered with a real dictionary: switch, directory field, browser panel, state rows, index editor, and the unavailable state |
 
 ## Self-contained subset
 
@@ -28,4 +29,5 @@ node_modules/.bin/vitest run --root dsh-memory
 
 `vitest.config.ts` resolves `@deepseek-ai/*` from this package's own `node_modules` and takes only `tests/**/*.spec.ts`.
 It runs `store.spec.ts`, `settings.spec.ts`, `instructions.spec.ts`, and `tool.spec.ts`; `loader-composition.spec.ts`
-needs the checkout's Loader and registry packages, so it belongs to the full run.
+needs the checkout's Loader and registry packages, and `memory-section.spec.tsx` needs React, so both belong to the
+full run.
