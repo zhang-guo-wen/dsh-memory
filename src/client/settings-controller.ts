@@ -303,11 +303,6 @@ export class MemorySectionController {
   }
 }
 
-/** The index view the section shows for the loaded file. */
-export function indexSummary(state: MemorySectionState): MemoryIndexView | null {
-  return state.status.kind === 'ready' ? state.status.value.index : null
-}
-
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }

@@ -144,7 +144,6 @@ export function registerMemoryTool(ctx: Context, runtime: MemoryRuntime): () => 
         title: `Memory ${args.command}: ${subject}`,
         kind: CALL_KIND[args.command as MemoryCommand],
         rawInput: args.command === 'insert' ? args.insert_text : args.file_text ?? args.new_str,
-        locations: [{ path: subject }],
       }
     },
     async execute(args, exec): Promise<MemoryResult> {
