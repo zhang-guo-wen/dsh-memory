@@ -18,9 +18,10 @@ It does not bundle `@deepseek-ai/*`; those resolve from the host harness at runt
 - **Session injection.** The first request of every session folds one instructions message: the memory protocol plus
   the current `MEMORY.md` (first 200 lines or 25 KB, as Claude loads it). The message is recorded on the Session log,
   so a resumed session is not given it twice.
-- **A settings section.** Master switch, a **Use Claude's directory** switch, a directory field with a chooser (the OS
-  picker when the host composes one, an in-app directory browser otherwise), the directory's state (index lines/bytes,
-  file count and total), and an editor for `MEMORY.md`.
+- **A settings section.** Master switch, a **Use Claude's directory** switch, a directory-template field with a chooser
+  (the OS picker when the host composes one, an in-app directory browser otherwise), a **project dropdown** that shows
+  any project's store, the selected store's state (index lines/bytes, file count and total), and an editor for
+  `MEMORY.md`.
 
 **Use Claude's directory is off by default.** While it is off, memory lives in your own directory, which you choose and
 can change at any time; while it is on, there is no directory to choose — the store is Claude Code's
@@ -76,6 +77,19 @@ Every field has a working default. The settings page writes `enabled` and `direc
 | `~/.dsh/memory/{project}` (default) | One subdirectory per project, so projects never share memories |
 | `~/.dsh/memory` | One store shared by every project (drop `{project}` to share) |
 | `~/.claude/projects/{project}/memory` | The same store the **Use Claude's directory** switch selects |
+
+### Looking at another project
+
+Memory is stored per project, so the page shows one at a time: the state block and the index editor describe whichever
+project the dropdown selected. The list is
+
+- the current project (the one the host process runs in),
+- every DSH workspace,
+- and, with **Use Claude's directory** on, every project directory under `<claude home>/projects/`.
+
+Rows are deduplicated by the directory they resolve to, so one repository appears once, and a single-project
+deployment shows no dropdown at all. Selecting another project only changes what the page reads and edits: the
+template is untouched, and every session still resolves its own directory.
 
 `{project}` is the git repository root of the session's working directory (a `.git` file — a linked worktree — is
 resolved back to the main repository), with every character outside `[A-Za-z0-9]` replaced by `-`:

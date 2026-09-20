@@ -13,7 +13,7 @@
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { DirectoryListing } from '@deepseek-ai/dsh-host-directory-picker/types'
 import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
-import type { MemoryIndexView, MemoryStatusResult } from '../types.ts'
+import type { MemoryIndexView, MemoryStatusResult, MemoryTargetView } from '../types.ts'
 
 /** Settings namespace registered Host-side by @zhang-guo-wen/dsh-memory. */
 export const MEMORY_SETTINGS_NS = 'memory'
@@ -60,6 +60,10 @@ export interface MemorySectionState {
   readonly status: MemoryStatusState
   readonly index: MemoryIndexState
   readonly browser: MemoryBrowserState
+  /** Projects the Host offers, nearest first. */
+  readonly targets: readonly MemoryTargetView[]
+  /** Selection id of the project the report describes. */
+  readonly target: string
   /** A one-line result of the last action, shown under the toolbar. */
   readonly notice: string | null
 }
@@ -71,12 +75,14 @@ export type PickResult =
 
 /** Host calls the section needs. */
 export interface MemoryHostCalls {
-  /** Read the memory store's state. */
-  status(): Promise<MemoryStatusResult>
-  /** Read the index file's whole content. */
-  readIndex(): Promise<{ exists: boolean; content: string }>
-  /** Replace the index file's content. */
-  writeIndex(content: string): Promise<void>
+  /** List the projects the Host can show. */
+  targets(): Promise<readonly MemoryTargetView[]>
+  /** Read one project's memory store state. */
+  status(target: string): Promise<MemoryStatusResult>
+  /** Read one project's index file. */
+  readIndex(target: string): Promise<{ exists: boolean; content: string }>
+  /** Replace one project's index file content. */
+  writeIndex(target: string, content: string): Promise<void>
   /** Ask for the composed picker's native chooser. */
   pick(): Promise<PickResult>
   /** List one directory level through the composed picker's browse capability. */
@@ -99,6 +105,8 @@ export interface MemorySectionFace {
   saveDirectory(): void
   /** Re-read the Host report and the index. */
   refresh(): void
+  /** Show another project's memory store. */
+  selectTarget(id: string): void
   /** Edit the index draft without saving it. */
   editIndex(value: string): void
   /** Write the index draft to the memory directory. */
@@ -124,6 +132,8 @@ export class MemorySectionController {
   private savedDirectory = ''
   private enabled = true
   private claudeCompatible = false
+  private targets: readonly MemoryTargetView[] = []
+  private target = 'current'
   private notice: string | null = null
 
   /**
@@ -163,6 +173,7 @@ export class MemorySectionController {
       editDirectory: value => { this.directory = value; this.publish() },
       saveDirectory: () => { this.saveDirectory() },
       refresh: () => { this.refresh() },
+      selectTarget: id => { this.selectTarget(id) },
       editIndex: value => { this.editIndex(value) },
       saveIndex: () => { this.saveIndex() },
       chooseDirectory: () => { this.chooseDirectory() },
@@ -194,6 +205,8 @@ export class MemorySectionController {
       status: this.status,
       index: this.index,
       browser: this.browser,
+      targets: this.targets,
+      target: this.target,
       notice: this.notice,
     }
   }
@@ -215,6 +228,20 @@ export class MemorySectionController {
     this.browser = { kind: 'closed' }
     this.publish()
     void this.commit('claudeCompatible', value)
+  }
+
+  /**
+   * Show another project's store.
+   *
+   * A project the Host no longer offers — a workspace removed between two
+   * refreshes — falls back to the Host's own answer (`status.target`), which is
+   * where an unknown id lands anyway.
+   */
+  private selectTarget(id: string): void {
+    this.target = id
+    this.index = { kind: 'loading' }
+    this.publish()
+    void this.refresh()
   }
 
   /**
@@ -249,7 +276,7 @@ export class MemorySectionController {
     if (this.index.kind !== 'ready' || !this.canWrite()) return
     const content = this.index.content
     void this.run(async () => {
-      await this.host.writeIndex(content)
+      await this.host.writeIndex(this.target, content)
       this.notice = null
       await this.loadIndex()
     })
@@ -284,14 +311,30 @@ export class MemorySectionController {
 
   private refresh(): void {
     void this.run(async () => {
+      this.targets = await this.loadTargets()
       this.status = await this.loadStatus()
       await this.loadIndex()
     })
   }
 
+  private async loadTargets(): Promise<readonly MemoryTargetView[]> {
+    try {
+      const targets = await this.host.targets()
+      // A selection the Host no longer offers (a removed workspace) would leave
+      // the menu without a checked row; the report's own answer repairs it.
+      return targets.length > 0 ? targets : this.targets
+    } catch {
+      // The picker is optional: without it the section still shows the project
+      // the Host falls back to.
+      return this.targets
+    }
+  }
+
   private async loadStatus(): Promise<MemoryStatusState> {
     try {
-      return { kind: 'ready', value: await this.host.status() }
+      const value = await this.host.status(this.target)
+      this.target = value.target
+      return { kind: 'ready', value }
     } catch (error: unknown) {
       return { kind: 'error', message: messageOf(error) }
     }
@@ -299,7 +342,7 @@ export class MemorySectionController {
 
   private async loadIndex(): Promise<void> {
     try {
-      const index = await this.host.readIndex()
+      const index = await this.host.readIndex(this.target)
       this.index = { kind: 'ready', exists: index.exists, content: index.content, saved: index.content }
     } catch (error: unknown) {
       this.index = { kind: 'error', message: messageOf(error) }

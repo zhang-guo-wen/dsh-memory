@@ -3,14 +3,14 @@
  *
  * The page is the memory plugin's whole operator surface: it turns memory on or
  * off, points the directory at any folder (including a Claude Code `memory/`
- * directory), shows what the Host resolved and holds there, and edits the
- * `MEMORY.md` index a session loads.
+ * directory), chooses which project's store the report and the editor describe,
+ * and edits the `MEMORY.md` index a session loads.
  *
  * @module @zhang-guo-wen/dsh-memory/client/MemorySection
  */
 
-import type { ReactNode } from 'react'
-import { Button, Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useState, type ReactNode } from 'react'
+import { Button, Input, Menu, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { DirectoryListing } from '@deepseek-ai/dsh-host-directory-picker/types'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { MemorySectionFace, MemorySectionState } from './settings-controller.ts'
@@ -158,6 +158,41 @@ function parentOf(listing: DirectoryListing): string {
   return parent?.path ?? listing.path
 }
 
+/** The project picker: one menu row per store the Host can show. */
+function TargetPicker({ state, t, select }: {
+  readonly state: MemorySectionState
+  readonly t: Translate
+  readonly select: (id: string) => void
+}): ReactNode {
+  const [open, setOpen] = useState(false)
+  if (state.targets.length < 2) return null
+  const selected = state.targets.find(target => target.id === state.target)
+  return (
+    <div className={css.field}>
+      <span className={css.fieldLabel}>{t('targets.label')}</span>
+      <span className={css.fieldHint}>{t('targets.hint')}</span>
+      <div className={css.actions}>
+        <Menu
+          open={open}
+          anchor={(
+            <Button variant="outline" onClick={() => { setOpen(value => !value) }}>
+              {selected?.label ?? t('targets.current')}
+            </Button>
+          )}
+          items={state.targets.map(target => ({ id: target.id, label: target.label }))}
+          selectedId={state.target}
+          onSelect={(id) => {
+            setOpen(false)
+            select(id)
+          }}
+          onClose={() => { setOpen(false) }}
+          portal
+        />
+      </div>
+    </div>
+  )
+}
+
 /** The settings section body. */
 export function MemorySection(props: MemorySectionProps): ReactNode {
   const { useMemory, t } = props
@@ -232,6 +267,8 @@ export function MemorySection(props: MemorySectionProps): ReactNode {
             />
           </>
         )}
+
+        <TargetPicker state={state} t={t} select={props.selectTarget} />
 
         <StateBlock state={state} t={t} />
 

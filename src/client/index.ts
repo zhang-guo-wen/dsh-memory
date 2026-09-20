@@ -28,6 +28,8 @@ import type {
   MemoryReadIndexResult,
   MemoryStatusRequest,
   MemoryStatusResult,
+  MemoryTargetsRequest,
+  MemoryTargetsResult,
   MemoryWriteIndexRequest,
 } from '../types.ts'
 import { MemorySection } from './MemorySection.tsx'
@@ -56,6 +58,7 @@ export const inject = ['slots', 'locale', 'settingsScope', 'remote']
 
 /** The namespace service this plugin mounts itself — fetched via `ctx.get`, never injected. */
 interface MemoryStoreNamespace {
+  targets(request: MemoryTargetsRequest): Promise<RemoteResult<MemoryTargetsResult>>
   status(request: MemoryStatusRequest): Promise<RemoteResult<MemoryStatusResult>>
   readIndex(request: MemoryReadIndexRequest): Promise<RemoteResult<MemoryReadIndexResult>>
   writeIndex(request: MemoryWriteIndexRequest): Promise<RemoteResult<{ bytes: number; lines: number }>>
@@ -92,12 +95,15 @@ export async function apply(ctx: Context): Promise<void> {
   } | undefined => ctx.get('remote.directoryPicker')
 
   const host: MemoryHostCalls = {
-    status: async () => await unwrapRemote(() => namespace().status({})),
-    readIndex: async () => {
-      const result = await unwrapRemote(() => namespace().readIndex({}))
+    targets: async () => (await unwrapRemote(() => namespace().targets({}))).targets,
+    status: async target => await unwrapRemote(() => namespace().status({ target })),
+    readIndex: async (target) => {
+      const result = await unwrapRemote(() => namespace().readIndex({ target }))
       return { exists: result.exists, content: result.content }
     },
-    writeIndex: async (content) => { await unwrapRemote(() => namespace().writeIndex({ content })) },
+    writeIndex: async (target, content) => {
+      await unwrapRemote(() => namespace().writeIndex({ target, content }))
+    },
     pick: async (): Promise<PickResult> => {
       const composed = picker()
       if (composed === undefined) {

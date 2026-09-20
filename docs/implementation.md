@@ -129,6 +129,15 @@ The settings section is not session-scoped, so `memoryStore.status` reports the 
 resolves to and carries `configured` (the raw template) and `projectScoped` beside it. Writing the index from the page
 goes through the same store the model writes through, so both paths share one 1 MiB cap and one final newline.
 
+### The project dropdown (`src/targets.ts`)
+
+`memoryStore.targets` lists the stores a deployment can show: the current project (the host process's cwd), every
+`ctx.workspaceRegistry.list()` workspace, and — in Claude-directory mode — every project directory under
+`<claude home>/projects/`. Rows are deduplicated by resolved directory with the current project first. `status`,
+`readIndex`, and `writeIndex` all take a `target` id (`current`, `workspace:<id>`, or `claude:<slug>`); an unknown id
+falls back to the current project and the id actually used rides back on `status.target`, so a stale selection never
+fails the page.
+
 </details>
 
 -----

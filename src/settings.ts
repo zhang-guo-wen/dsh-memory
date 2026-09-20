@@ -80,6 +80,10 @@ export interface MemoryRuntime {
   configuredDirectory(): string
   /** Resolve the memory directory for one session working directory. */
   directoryFor(cwd: string | undefined): Promise<string>
+  /** Root holding Claude Code's per-project directories. */
+  claudeProjectsRoot(): string
+  /** Memory directory of one Claude project, named by its directory slug. */
+  claudeProjectDirectory(slug: string): string
   /** Lines of the index a session loads. */
   indexLines(): number
   /** UTF-8 bytes of the index a session loads. */
@@ -174,6 +178,8 @@ export function registerMemorySettings(
     indexLines: () => config.indexLines ?? DEFAULT_INDEX_LINES,
     indexBytes: () => config.indexBytes ?? DEFAULT_INDEX_BYTES,
     maxFileBytes: () => config.maxFileBytes ?? DEFAULT_MEMORY_LIMITS.maxFileBytes,
+    claudeProjectsRoot: () => join(claudeHome, 'projects'),
+    claudeProjectDirectory: slug => join(claudeHome, 'projects', slug, 'memory'),
   }
 }
 

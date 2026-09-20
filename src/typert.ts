@@ -72,6 +72,7 @@ function descriptor(method: string): InvocationDescriptor {
 export const TYPERT_REMOTE: TypertRemoteContribution = {
   package: '@zhang-guo-wen/dsh-memory',
   descriptors: [
+    descriptor('targets'),
     descriptor('status'),
     descriptor('readIndex'),
     descriptor('writeIndex'),

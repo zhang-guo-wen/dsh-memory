@@ -21,7 +21,10 @@
   `{project}` 的项目名解析（git 仓库根 + worktree 回溯）、`claudeCompatible` 下的 Claude 目录解析。
 - `src/instructions.ts` —— 注入文本与 `agent/pre-step` 监听：每个会话折叠一次，来源记为通用 `plugin` kind。
 - `src/tool.ts` —— `defineTool` 的 `memory` 工具：参数表、按命令校验、卡片呈现。
-- `src/remote.ts` / `src/typert.ts` / `src/types.ts` —— 设置页读写的 Typert Remote（`memoryStore`）。
+- `src/remote.ts` / `src/typert.ts` / `src/types.ts` —— 设置页读写的 Typert Remote（`memoryStore`：`targets` /
+  `status` / `readIndex` / `writeIndex`）。
+- `src/targets.ts` —— 设置页可选的项目：当前项目、`ctx.workspaceRegistry` 的工作区、（Claude 目录模式下）
+  `<Claude 配置目录>/projects/*`；按解析出的目录去重，未知选择 id 回落当前项目，实际用的 id 回显在 `status.target`。
 - `src/client/` —— 浏览器半边：设置区块、控制器、字典、CSS module。
 - `lib/` —— 构建产物：**已提交进仓库**（`index.mjs` host + `client.js` 浏览器 handoff），
   这样别人可以直接从 git 安装。改完源码**记得 `npm run build` 并把 `lib/` 一起提交**。

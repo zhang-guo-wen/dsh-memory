@@ -76,10 +76,18 @@ describe('real Loader composition', () => {
     expect(loaded.tools.schemas().map(schema => schema.name)).toContain('memory')
     expect(loaded.get('memoryStore')).toBeDefined()
 
+    const targets = (await loaded.memoryStore.targets({})).targets
+    expect(targets[0]?.id).toBe('current')
+    expect(targets[0]?.directory).toBe(memoryRoot)
+
     const status = await loaded.memoryStore.status({})
+    expect(status.target).toBe('current')
     expect(status.directory).toBe(memoryRoot)
     expect(status.enabled).toBe(true)
     expect(status.index).toBeNull()
+
+    // An unknown selection falls back to the host process's own project.
+    expect((await loaded.memoryStore.status({ target: 'workspace:gone' })).target).toBe('current')
 
     const written = await loaded.memoryStore.writeIndex({ content: '- [Notes](notes.md) — hooks\n' })
     expect(written.lines).toBe(1)

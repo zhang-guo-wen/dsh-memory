@@ -16,6 +16,7 @@ const READY: MemorySectionState = {
     value: {
       enabled: true,
       claudeCompatible: false,
+      target: 'current',
       configured: '~/.claude/projects/{project}/memory',
       directory: '/home/u/.claude/projects/-home-u-repo/memory',
       projectScoped: true,
@@ -38,6 +39,11 @@ const READY: MemorySectionState = {
   },
   index: { kind: 'ready', exists: true, content: '- [Debugging](debugging.md) — tokens\n', saved: '- [Debugging](debugging.md) — tokens\n' },
   browser: { kind: 'closed' },
+  targets: [
+    { id: 'current', label: 'deepseek-harness', detail: '/repo', directory: '/repo/.dsh/memory/-repo', exists: true },
+    { id: 'workspace:w2', label: 'nocobase', detail: '/work/nocobase', directory: '/home/u/.dsh/memory/-work-nocobase', exists: false },
+  ],
+  target: 'current',
   notice: null,
 }
 
@@ -59,6 +65,7 @@ function render(locale: 'zh' | 'en', state: Partial<MemorySectionState> = {}): s
     editDirectory: () => {},
     saveDirectory: () => {},
     refresh: () => {},
+    selectTarget: () => {},
     editIndex: () => {},
     saveIndex: () => {},
     chooseDirectory: () => {},
@@ -94,6 +101,17 @@ describe('memory settings section', () => {
     expect(html).not.toContain(escaped(zh['directory.choose']))
     expect(html).not.toContain('<input')
     expect(html).toContain(escaped(zh['claude.label']))
+  })
+
+  it('offers the projects the Host can show', () => {
+    const html = render('zh')
+    expect(html).toContain(escaped(zh['targets.label']))
+    expect(html).toContain(escaped(zh['targets.hint']))
+    // The trigger names the selected project.
+    expect(html).toContain('deepseek-harness')
+    // One project means nothing to choose, so the picker stays away.
+    const single = render('zh', { targets: [READY.targets[0]!] })
+    expect(single).not.toContain(escaped(zh['targets.hint']))
   })
 
   it('reports what the Host resolved and holds', () => {

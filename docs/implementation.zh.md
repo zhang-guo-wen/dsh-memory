@@ -112,8 +112,15 @@ Session 格式里也只会出现发布版能产出的来源 kind。
 
 ### 设置页读的是什么
 
-设置区块不是会话作用域，所以 `memoryStore.status` 报告的是**宿主进程所在项目**解析出的目录，并同时给出
+设置区块不是会话作用域，所以状态区报告的是**宿主进程所在项目**解析出的目录，并同时给出
 `configured`（原始模板）与 `projectScoped`。从页面写索引与模型写索引走同一个 store，因此共用同一个 1 MiB 上限。
+
+### 项目下拉（`src/targets.ts`）
+
+`memoryStore.targets` 列出可选项目：当前项目（宿主进程的 cwd）、`ctx.workspaceRegistry.list()` 里的每个工作区，
+以及 Claude 目录模式下 `<Claude 配置目录>/projects/` 下的每个项目目录；按解析出的目录去重，当前项目排第一。
+`status` / `readIndex` / `writeIndex` 都接受 `target` 选择 id（`current` / `workspace:<id>` / `claude:<slug>`），
+未知 id 一律回落到当前项目，并把实际用的 id 回显在 `status.target` 上，所以过期的选择不会让页面失败。
 
 </details>
 

@@ -16,12 +16,15 @@ import { Remote, RemoteError, TypertRemoteService } from '@deepseek-ai/dsh-typer
 import { MEMORY_PATH_PREFIX, PROJECT_TOKEN } from './paths.ts'
 import { MEMORY_INDEX_NAME, MemoryStore } from './store.ts'
 import type { MemoryRuntime } from './settings.ts'
+import { listMemoryTargets, resolveMemoryTarget } from './targets.ts'
 import type {
   MemoryIndexView,
   MemoryReadIndexRequest,
   MemoryReadIndexResult,
   MemoryStatusRequest,
   MemoryStatusResult,
+  MemoryTargetsRequest,
+  MemoryTargetsResult,
   MemoryWriteIndexRequest,
   MemoryWriteIndexResult,
 } from './types.ts'
@@ -35,9 +38,9 @@ declare module '@deepseek-ai/cordis' {
 
 /**
  * Host service behind the `memoryStore` Remote namespace. Every method answers
- * for the memory store the Host process's own project resolves to, because the
- * settings page is not session-scoped; a `{project}`-templated directory says
- * so through `projectScoped`.
+ * for one selected project — the Host process's own by default, or whichever
+ * the settings page picked from `targets` — because the settings page is not
+ * session-scoped and a `{project}` template resolves per project.
  */
 export class MemoryRemote extends TypertRemoteService {
   /**
@@ -49,17 +52,28 @@ export class MemoryRemote extends TypertRemoteService {
   }
 
   /**
-   * Report the memory directory's current state.
-   * @param request - empty placeholder; the store is host-wide. The parameter
+   * List the projects the settings page can look at.
+   * @param request - empty placeholder; the list is host-wide. The parameter
    *   must keep this name: the gateway derives its descriptor from the method
    *   signature and rejects a payload whose field does not match.
+   * @returns the current project, every workspace, and Claude's project directories.
+   */
+  @Remote('targets')
+  async targets(request: MemoryTargetsRequest): Promise<MemoryTargetsResult> {
+    void request
+    return { targets: await listMemoryTargets(this.ctx, this.runtime) }
+  }
+
+  /**
+   * Report one project's memory directory state.
+   * @param request - the selected project, absent for the host process's own.
    * @returns the configured and resolved directory, the index's state, and every file.
    */
   @Remote('status')
   async status(request: MemoryStatusRequest): Promise<MemoryStatusResult> {
-    void request
     const configured = this.runtime.configuredDirectory()
-    const store = await this.store()
+    const { id, directory } = await resolveMemoryTarget(this.ctx, this.runtime, request.target)
+    const store = new MemoryStore(directory, { maxFileBytes: this.runtime.maxFileBytes() })
     const [indexSource, files, exists] = await Promise.all([
       store.readIndexSource(),
       store.listFiles(),
@@ -68,6 +82,7 @@ export class MemoryRemote extends TypertRemoteService {
     return {
       enabled: this.runtime.enabled(),
       claudeCompatible: this.runtime.claudeCompatible(),
+      target: id,
       configured,
       directory: store.root,
       projectScoped: configured.includes(PROJECT_TOKEN),
@@ -80,15 +95,14 @@ export class MemoryRemote extends TypertRemoteService {
   }
 
   /**
-   * Read the index file's whole content for the settings editor.
-   * @param request - empty placeholder; the store is host-wide.
+   * Read one project's index file for the settings editor.
+   * @param request - the selected project, absent for the host process's own.
    * @returns whether the index exists, its content, and its size.
    * @throws a typed memory error when the file cannot be read.
    */
   @Remote('readIndex')
   async readIndex(request: MemoryReadIndexRequest): Promise<MemoryReadIndexResult> {
-    void request
-    const store = await this.store()
+    const store = await this.store(request.target)
     try {
       const source = await store.readIndexSource()
       return source === undefined
@@ -100,8 +114,8 @@ export class MemoryRemote extends TypertRemoteService {
   }
 
   /**
-   * Replace the index file's content.
-   * @param request - the index file's new content.
+   * Replace one project's index file content.
+   * @param request - the selected project and the index file's new content.
    * @returns the bytes and lines written.
    * @throws a typed memory error when the content is not text or cannot be written.
    */
@@ -112,7 +126,7 @@ export class MemoryRemote extends TypertRemoteService {
         reason: `content was ${typeof request.content}`,
       })
     }
-    const store = await this.store()
+    const store = await this.store(request.target)
     try {
       return await store.writeIndex(request.content)
     } catch (cause) {
@@ -120,12 +134,10 @@ export class MemoryRemote extends TypertRemoteService {
     }
   }
 
-  /** The store for the directory the Host process's own project resolves to. */
-  private async store(): Promise<MemoryStore> {
-    return new MemoryStore(
-      await this.runtime.directoryFor(undefined),
-      { maxFileBytes: this.runtime.maxFileBytes() },
-    )
+  /** The store one selection names, falling back to the Host process's own project. */
+  private async store(target: string | undefined): Promise<MemoryStore> {
+    const { directory } = await resolveMemoryTarget(this.ctx, this.runtime, target)
+    return new MemoryStore(directory, { maxFileBytes: this.runtime.maxFileBytes() })
   }
 }
 
