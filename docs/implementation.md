@@ -38,28 +38,35 @@ it like any other plugin.
 - name: '@deepseek-ai/dsh-tools'
 - name: '@zhang-guo-wen/dsh-memory'
   config:
-    directory: '~/.claude/projects/{project}/memory'
+    claudeCompatible: true
 ```
 
 | Field | Default | Meaning |
 |---|---|---|
 | `enabled` | `true` | Fold the index into a session and register the `memory` tool |
-| `directory` | `~/.dsh/memory` | Memory directory; `~` and `{project}` expand |
+| `claudeCompatible` | `false` | Use Claude Code's own `<claude home>/projects/<project>/memory`; while on, `directory` is ignored |
+| `directory` | `~/.dsh/memory/{project}` | Memory directory; `~` and `{project}` expand |
+| `claudeHome` | `$CLAUDE_CONFIG_DIR`, `$CLAUDE_HOME`, `~/.claude` | Claude config directory for `claudeCompatible` |
 | `indexLines` | `200` | Lines of the index a session loads |
 | `indexBytes` | `25600` | UTF-8 bytes of the index a session loads |
 | `maxFileBytes` | `1048576` | Largest single memory file read or written |
 | `projectRootMarkers` | `['.git']` | Directory entries that identify the project root |
 
-`enabled` and `directory` also have settings-page fields in the `memory` namespace, so an operator can move the store
-without touching the composition.
+`enabled`, `directory`, and `claudeCompatible` also have settings-page fields in the `memory` namespace, so an operator
+can move the store without touching the composition. The page hides the directory field while `claudeCompatible` is on,
+because that mode derives the directory and has nothing to choose.
 
 ### Directory resolution
 
 `~` expands against the process user home. `{project}` is replaced by the Claude-style name of the session project:
 the git repository root of the session working directory — a `.git` file (a linked worktree) resolves back to the main
 repository through its `gitdir:` line — with every character outside `[A-Za-z0-9]` replaced by `-`. Without a
-repository, the working directory itself names the project. Resolution is per session, so a `{project}` template gives
-each project its own store.
+repository, the working directory itself names the project. Resolution is per session, so the default
+`~/.dsh/memory/{project}` gives each project its own store.
+
+With `claudeCompatible` on, the directory is instead `<claude home>/projects/<project>/memory` — Claude Code's own
+auto-memory directory — and no directory is chosen. `directory` is ignored in that mode rather than cleared, so
+turning the switch off returns the operator to the directory they had configured.
 
 ### The `memory` tool
 

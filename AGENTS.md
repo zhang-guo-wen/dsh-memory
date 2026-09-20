@@ -1,8 +1,9 @@
 # AGENTS.md
 
 本仓 `dsh-memory` 是**独立于 harness monorepo** 的 DeepSeek Harness (DSH) 插件：
-把 Claude 记忆目录（`MEMORY.md` 索引 + 每个记忆一个话题文件）与 memory 工具接进会话，目录由用户选择，
-并提供设置页的「记忆」区块。它不打包 `@deepseek-ai/*`，运行时从宿主 harness 解析这些包。
+把 Claude 记忆目录（`MEMORY.md` 索引 + 每个记忆一个话题文件）与 memory 工具接进会话，目录默认每项目一份、
+可自己选，也可以一个开关直接切到 Claude Code 自己的记忆目录；并提供设置页的「记忆」区块。
+它不打包 `@deepseek-ai/*`，运行时从宿主 harness 解析这些包。
 
 姊妹插件：[`dsh-claude-compat`](../dsh-claude-compat)（CLAUDE.md 指令文件、技能、作用域规则）、
 [`dsh-mcp-manager`](../dsh-mcp-manager)（MCP）。三者互不 import、互不依赖，可单独安装。
@@ -13,9 +14,11 @@
 这不是风格选择——`dsh plugin add <git-url>` 取的是仓库根，包放在 `packages/*` 下会被装成错误的东西。
 
 - `src/paths.ts` —— 目录解析（`~`、`{project}`）与 `/memories` 路径寻址；越界一律抛 `MemoryPathError`。
+  默认目录是 `~/.dsh/memory/{project}`（每项目一份）。
 - `src/store.ts` —— 记忆目录的全部读写：`view`/`create`/`str_replace`/`insert`/`delete`/`rename` 的返回文案、
   索引读取上限、目录列举、软链接越界检查。**不抛错，返回文案**：Claude 的措辞就是契约。
-- `src/settings.ts` —— `memory` 设置命名空间、组合层 `Config`、`{project}` 的项目名解析（git 仓库根 + worktree 回溯）。
+- `src/settings.ts` —— `memory` 设置命名空间（`enabled` / `directory` / `claudeCompatible`）、组合层 `Config`、
+  `{project}` 的项目名解析（git 仓库根 + worktree 回溯）、`claudeCompatible` 下的 Claude 目录解析。
 - `src/instructions.ts` —— 注入文本与 `agent/pre-step` 监听：每个会话折叠一次，来源记为通用 `plugin` kind。
 - `src/tool.ts` —— `defineTool` 的 `memory` 工具：参数表、按命令校验、卡片呈现。
 - `src/remote.ts` / `src/typert.ts` / `src/types.ts` —— 设置页读写的 Typert Remote（`memoryStore`）。

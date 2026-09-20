@@ -11,6 +11,7 @@
  */
 
 import { readFile, stat } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
@@ -34,12 +35,19 @@ export interface MemorySettingsFlags {
    * replaced by the session project's Claude-style directory name.
    */
   directory: string
+  /**
+   * Whether the store is Claude Code's own auto-memory directory
+   * (`<claude home>/projects/<project>/memory`). While it is on, `directory` is
+   * ignored and no directory has to be chosen.
+   */
+  claudeCompatible: boolean
 }
 
 /** Schema served to settings clients for this namespace. */
 export const MEMORY_SETTINGS_SCHEMA: Schema<MemorySettingsFlags> = z.object({
   enabled: z.boolean().default(true),
   directory: z.string().default(DEFAULT_MEMORY_DIRECTORY),
+  claudeCompatible: z.boolean().default(false),
 })
 
 /** Composition-layer defaults and caps for this plugin. */
@@ -48,6 +56,10 @@ export interface MemoryConfig {
   enabled?: boolean
   /** Initial memory directory when the user document does not override it. */
   directory?: string
+  /** Initial Claude-directory mode when the user document does not override it. Defaults to false. */
+  claudeCompatible?: boolean
+  /** Claude Code config directory; defaults to `$CLAUDE_CONFIG_DIR`, then `$CLAUDE_HOME`, then `~/.claude`. */
+  claudeHome?: string
   /** Lines of the index a session loads. Defaults to 200, matching Claude Code. */
   indexLines?: number
   /** UTF-8 bytes of the index a session loads. Defaults to 25600, matching Claude Code. */
@@ -62,6 +74,8 @@ export interface MemoryConfig {
 export interface MemoryRuntime {
   /** Whether memory is on right now. */
   enabled(): boolean
+  /** Whether the store is Claude Code's own memory directory right now. */
+  claudeCompatible(): boolean
   /** The configured directory, as the settings page shows it. */
   configuredDirectory(): string
   /** Resolve the memory directory for one session working directory. */
@@ -114,6 +128,7 @@ export function registerMemorySettings(
   const base: MemorySettingsFlags = {
     enabled: config.enabled ?? true,
     directory: config.directory ?? DEFAULT_MEMORY_DIRECTORY,
+    claudeCompatible: config.claudeCompatible ?? false,
   }
   let flags = (): MemorySettingsFlags => ({ ...base })
   ctx.inject(['settings'], (settingsCtx) => {
@@ -135,6 +150,7 @@ export function registerMemorySettings(
   })
 
   const markers = config.projectRootMarkers ?? ['.git']
+  const claudeHome = resolveClaudeHome(config)
   const names = new Map<string, Promise<string>>()
 
   const projectNameFor = async (cwd: string | undefined): Promise<string> => {
@@ -148,12 +164,35 @@ export function registerMemorySettings(
 
   return {
     enabled: () => flags().enabled,
+    claudeCompatible: () => flags().claudeCompatible,
     configuredDirectory: () => flags().directory,
-    directoryFor: async (cwd) => resolveMemoryDirectory(flags().directory, await projectNameFor(cwd)),
+    directoryFor: async (cwd) => {
+      const project = await projectNameFor(cwd)
+      if (flags().claudeCompatible) return join(claudeHome, 'projects', project, 'memory')
+      return resolveMemoryDirectory(flags().directory, project)
+    },
     indexLines: () => config.indexLines ?? DEFAULT_INDEX_LINES,
     indexBytes: () => config.indexBytes ?? DEFAULT_INDEX_BYTES,
     maxFileBytes: () => config.maxFileBytes ?? DEFAULT_MEMORY_LIMITS.maxFileBytes,
   }
+}
+
+/**
+ * Resolve the Claude Code config directory.
+ *
+ * Claude Code itself reads `$CLAUDE_CONFIG_DIR`; `$CLAUDE_HOME` is the older
+ * variable the sibling compatibility plugin already honored, and `~/.claude` is
+ * the default.
+ * @param config - composition configuration carrying an optional explicit home.
+ * @returns the absolute Claude home path.
+ */
+export function resolveClaudeHome(config: MemoryConfig): string {
+  return resolve(
+    config.claudeHome
+    ?? process.env.CLAUDE_CONFIG_DIR
+    ?? process.env.CLAUDE_HOME
+    ?? join(homedir(), '.claude'),
+  )
 }
 
 /** The Claude-style project directory name for one session working directory. */

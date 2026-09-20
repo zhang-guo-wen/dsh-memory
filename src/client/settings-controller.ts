@@ -18,10 +18,11 @@ import type { MemoryIndexView, MemoryStatusResult } from '../types.ts'
 /** Settings namespace registered Host-side by @zhang-guo-wen/dsh-memory. */
 export const MEMORY_SETTINGS_NS = 'memory'
 
-/** The two fields the memory namespace owns. */
+/** The fields the memory namespace owns. */
 export interface MemoryFlags {
   enabled: boolean
   directory: string
+  claudeCompatible: boolean
 }
 
 /** How the Host answered the last state request. */
@@ -50,6 +51,8 @@ export interface MemorySectionState {
   /** Whether the Host document accepts writes. */
   readonly writable: boolean
   readonly enabled: boolean
+  /** Whether the store is Claude Code's own memory directory. */
+  readonly claudeCompatible: boolean
   /** The directory field's draft value. */
   readonly directory: string
   /** The committed directory value, for the field's dirty state. */
@@ -88,6 +91,8 @@ export interface MemorySectionFace {
   }
   /** Turn memory on or off. */
   setEnabled(value: boolean): void
+  /** Follow Claude Code's own memory directory instead of a chosen one. */
+  setClaudeCompatible(value: boolean): void
   /** Edit the directory field without committing it. */
   editDirectory(value: string): void
   /** Commit the directory field. */
@@ -118,6 +123,7 @@ export class MemorySectionController {
   private directory = ''
   private savedDirectory = ''
   private enabled = true
+  private claudeCompatible = false
   private notice: string | null = null
 
   /**
@@ -153,6 +159,7 @@ export class MemorySectionController {
     return {
       hooks: { memory: this.store },
       setEnabled: value => { this.setEnabled(value) },
+      setClaudeCompatible: value => { this.setClaudeCompatible(value) },
       editDirectory: value => { this.directory = value; this.publish() },
       saveDirectory: () => { this.saveDirectory() },
       refresh: () => { this.refresh() },
@@ -169,6 +176,7 @@ export class MemorySectionController {
     const snapshot = this.scope.getSnapshot()
     const value = snapshot.value
     this.enabled = value?.enabled ?? true
+    this.claudeCompatible = value?.claudeCompatible ?? false
     const directory = value?.directory ?? ''
     this.directory = directory
     this.savedDirectory = directory
@@ -180,6 +188,7 @@ export class MemorySectionController {
       available: snapshot.status === 'ready',
       writable: snapshot.writable,
       enabled: this.enabled,
+      claudeCompatible: this.claudeCompatible,
       directory: this.directory,
       savedDirectory: this.savedDirectory,
       status: this.status,
@@ -198,6 +207,15 @@ export class MemorySectionController {
     this.enabled = value
     this.publish()
     void this.scope.set('enabled', value)
+  }
+
+  private setClaudeCompatible(value: boolean): void {
+    if (!this.canWrite()) return
+    this.claudeCompatible = value
+    this.browser = { kind: 'closed' }
+    this.notice = null
+    this.publish()
+    void this.scope.set('claudeCompatible', value)
   }
 
   private saveDirectory(): void {

@@ -11,16 +11,20 @@ It does not bundle `@deepseek-ai/*`; those resolve from the host harness at runt
 ## What it does
 
 - **A memory directory.** An index named `MEMORY.md` plus one topic file per memory, the same layout as Claude's
-  auto-memory directory.
+  auto-memory directory — **one subdirectory per project** by default.
 - **The `memory` tool.** `view` / `create` / `str_replace` / `insert` / `delete` / `rename`, addressed through
   `/memories`, answering with Claude's own reply strings (`Error: File … already exists`,
   `Please ensure it is unique`, …).
 - **Session injection.** The first request of every session folds one instructions message: the memory protocol plus
   the current `MEMORY.md` (first 200 lines or 25 KB, as Claude loads it). The message is recorded on the Session log,
   so a resumed session is not given it twice.
-- **A settings section.** Master switch, a directory field with a chooser (the OS picker when the host composes one,
-  an in-app directory browser otherwise), the directory's state (index lines/bytes, file count and total), and an
-  editor for `MEMORY.md`.
+- **A settings section.** Master switch, a **Use Claude's directory** switch, a directory field with a chooser (the OS
+  picker when the host composes one, an in-app directory browser otherwise), the directory's state (index lines/bytes,
+  file count and total), and an editor for `MEMORY.md`.
+
+**Use Claude's directory is off by default.** While it is off, memory lives in your own directory, which you choose and
+can change at any time; while it is on, there is no directory to choose — the store is Claude Code's
+`~/.claude/projects/<project>/memory`, shared with Claude itself.
 
 `CLAUDE.md` instruction files are **not** this plugin's surface — that is
 [`@zhang-guo-wen/dsh-claude-compat`](https://github.com/zhang-guo-wen/dsh-claude-compat). The two are independent and
@@ -57,7 +61,9 @@ Every field has a working default. The settings page writes `enabled` and `direc
 | Field | Default | Meaning |
 |---|---|---|
 | `enabled` | `true` | Fold the index into a session and register the `memory` tool |
-| `directory` | `~/.dsh/memory` | Memory directory; accepts `~` and `{project}` |
+| `claudeCompatible` | `false` | Use Claude Code's own memory directory; while on, `directory` is ignored and nothing has to be chosen |
+| `directory` | `~/.dsh/memory/{project}` | Memory directory; accepts `~` and `{project}` |
+| `claudeHome` | `$CLAUDE_CONFIG_DIR`, `$CLAUDE_HOME`, or `~/.claude` | Claude config directory; locates `projects/<project>/memory` in Claude-directory mode |
 | `indexLines` | `200` | Lines of the index a session loads, matching Claude Code |
 | `indexBytes` | `25600` | UTF-8 bytes of the index a session loads, matching Claude Code |
 | `maxFileBytes` | `1048576` | Largest single memory file this plugin reads or writes |
@@ -67,9 +73,9 @@ Every field has a working default. The settings page writes `enabled` and `direc
 
 | Form | Resolves to |
 |---|---|
-| `~/.dsh/memory` | One store under the user home, shared by every project |
-| `~/.dsh/memory/{project}` | One store per project, named the way Claude names its project directories |
-| `~/.claude/projects/{project}/memory` | **Claude Code's own auto-memory directory, reused as it is** |
+| `~/.dsh/memory/{project}` (default) | One subdirectory per project, so projects never share memories |
+| `~/.dsh/memory` | One store shared by every project (drop `{project}` to share) |
+| `~/.claude/projects/{project}/memory` | The same store the **Use Claude's directory** switch selects |
 
 `{project}` is the git repository root of the session's working directory (a `.git` file — a linked worktree — is
 resolved back to the main repository), with every character outside `[A-Za-z0-9]` replaced by `-`:

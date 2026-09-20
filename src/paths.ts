@@ -15,8 +15,8 @@
 import { homedir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 
-/** Memory directory used when the user configures none. */
-export const DEFAULT_MEMORY_DIRECTORY = '~/.dsh/memory'
+/** Memory directory used when the user configures none: one subdirectory per project. */
+export const DEFAULT_MEMORY_DIRECTORY = '~/.dsh/memory/{project}'
 
 /** Virtual root every model-facing memory path is addressed through. */
 export const MEMORY_PATH_PREFIX = '/memories'

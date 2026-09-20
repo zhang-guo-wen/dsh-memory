@@ -73,7 +73,7 @@ function StateBlock({ state, t }: { readonly state: MemorySectionState; readonly
       />
       <StateRow
         label={t('status.files')}
-        value={`${report.files.length} · ${t('status.total')} ${formatSize(report.totalBytes)}`}
+        value={t('status.filesValue', { count: report.files.length, size: formatSize(report.totalBytes) })}
       />
       <StateRow label={t('status.cap')} value={formatSize(report.maxFileBytes)} />
       {index?.truncated === true
@@ -168,8 +168,6 @@ export function MemorySection(props: MemorySectionProps): ReactNode {
   return (
     <div className={css.section}>
       <div className={css.panel}>
-        <p className={css.intro}>{t('intro')}</p>
-
         <div className={css.switchRow}>
           <span className={css.switchText}>
             <span className={css.switchLabel}>{t('enable.label')}</span>
@@ -184,38 +182,56 @@ export function MemorySection(props: MemorySectionProps): ReactNode {
           />
         </div>
 
-        <div className={css.field}>
-          <span className={css.fieldLabel}>{t('directory.label')}</span>
-          <span className={css.fieldHint}>{t('directory.hint')}</span>
-          <div className={css.actions}>
-            <Input
-              className={cls('input')}
-              value={state.directory}
-              placeholder={t('directory.placeholder')}
-              aria-label={t('directory.label')}
-              disabled={disabled}
-              onChange={event => { props.editDirectory(event.target.value) }}
-            />
-            <Button
-              variant="outline"
-              disabled={disabled || state.directory === state.savedDirectory}
-              onClick={() => { props.saveDirectory() }}
-            >
-              {t('directory.save')}
-            </Button>
-            <Button variant="outline" disabled={disabled} onClick={() => { props.chooseDirectory() }}>
-              {t('directory.choose')}
-            </Button>
-          </div>
+        <div className={css.switchRow}>
+          <span className={css.switchText}>
+            <span className={css.switchLabel}>{t('claude.label')}</span>
+            <span className={css.switchDesc}>{t('claude.desc')}</span>
+          </span>
+          <Switch
+            checked={state.claudeCompatible}
+            onChange={value => { props.setClaudeCompatible(value) }}
+            label={t('claude.label')}
+            disabled={disabled}
+            title={disabled ? t('unavailable') : undefined}
+          />
         </div>
 
-        <Browser
-          state={state}
-          t={t}
-          browse={props.browse}
-          use={props.useBrowsed}
-          close={props.closeBrowser}
-        />
+        {state.claudeCompatible ? null : (
+          <>
+            <div className={css.field}>
+              <span className={css.fieldLabel}>{t('directory.label')}</span>
+              <span className={css.fieldHint}>{t('directory.hint')}</span>
+              <div className={css.actions}>
+                <Input
+                  className={cls('input')}
+                  value={state.directory}
+                  placeholder={t('directory.placeholder')}
+                  aria-label={t('directory.label')}
+                  disabled={disabled}
+                  onChange={event => { props.editDirectory(event.target.value) }}
+                />
+                <Button
+                  variant="outline"
+                  disabled={disabled || state.directory === state.savedDirectory}
+                  onClick={() => { props.saveDirectory() }}
+                >
+                  {t('directory.save')}
+                </Button>
+                <Button variant="outline" disabled={disabled} onClick={() => { props.chooseDirectory() }}>
+                  {t('directory.choose')}
+                </Button>
+              </div>
+            </div>
+
+            <Browser
+              state={state}
+              t={t}
+              browse={props.browse}
+              use={props.useBrowsed}
+              close={props.closeBrowser}
+            />
+          </>
+        )}
 
         <StateBlock state={state} t={t} />
 

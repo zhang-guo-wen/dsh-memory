@@ -41,6 +41,7 @@ export {
   MEMORY_SETTINGS_NAMESPACE,
   MEMORY_SETTINGS_SCHEMA,
   registerMemorySettings,
+  resolveClaudeHome,
   type MemoryConfig,
   type MemoryRuntime,
   type MemorySettingsFlags,
@@ -71,6 +72,8 @@ export type Config = MemoryConfig
 export const Config: Schema<Config> = z.object({
   enabled: z.boolean().default(true),
   directory: z.string().default(DEFAULT_MEMORY_DIRECTORY),
+  claudeCompatible: z.boolean().default(false),
+  claudeHome: z.string(),
   indexLines: z.number().step(1).min(1).default(DEFAULT_INDEX_LINES),
   indexBytes: z.number().step(1).min(1).default(DEFAULT_INDEX_BYTES),
   maxFileBytes: z.number().step(1).min(1).default(DEFAULT_MEMORY_LIMITS.maxFileBytes),

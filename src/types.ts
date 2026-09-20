@@ -45,6 +45,8 @@ export interface MemoryIndexView {
 export interface MemoryStatusResult {
   /** Whether the memory feature is on. */
   readonly enabled: boolean
+  /** Whether the store is Claude Code's own memory directory. */
+  readonly claudeCompatible: boolean
   /** The directory exactly as configured, `~` and `{project}` included. */
   readonly configured: string
   /** The configured directory resolved for the host process's project. */

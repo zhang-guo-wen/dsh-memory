@@ -8,12 +8,14 @@ const READY: MemorySectionState = {
   available: true,
   writable: true,
   enabled: true,
+  claudeCompatible: false,
   directory: '~/.claude/projects/{project}/memory',
   savedDirectory: '~/.claude/projects/{project}/memory',
   status: {
     kind: 'ready',
     value: {
       enabled: true,
+      claudeCompatible: false,
       configured: '~/.claude/projects/{project}/memory',
       directory: '/home/u/.claude/projects/-home-u-repo/memory',
       projectScoped: true,
@@ -53,6 +55,7 @@ function render(locale: 'zh' | 'en', state: Partial<MemorySectionState> = {}): s
     },
     useMemory: (selector: (value: MemorySectionState) => unknown) => selector(snapshot),
     setEnabled: () => {},
+    setClaudeCompatible: () => {},
     editDirectory: () => {},
     saveDirectory: () => {},
     refresh: () => {},
@@ -77,12 +80,20 @@ function escaped(text: string): string {
 }
 
 describe('memory settings section', () => {
-  it('presents the switch, the directory field, and the index editor', () => {
+  it('presents both switches, the directory field, and the index editor', () => {
     const html = render('zh')
-    expect(html).toContain('role="switch"')
+    expect(html.match(/role="switch"/g)).toHaveLength(2)
+    expect(html).toContain(escaped(zh['claude.label']))
     expect(html).toContain(`value="${escaped(READY.directory)}"`)
     expect(html).toContain('<textarea')
     expect(html).toContain(escaped('- [Debugging](debugging.md) — tokens'))
+  })
+
+  it('drops the directory field while Claude\'s own directory is used', () => {
+    const html = render('zh', { claudeCompatible: true })
+    expect(html).not.toContain(escaped(zh['directory.choose']))
+    expect(html).not.toContain('<input')
+    expect(html).toContain(escaped(zh['claude.label']))
   })
 
   it('reports what the Host resolved and holds', () => {
@@ -90,7 +101,9 @@ describe('memory settings section', () => {
     expect(html).toContain(escaped('/home/u/.claude/projects/-home-u-repo/memory'))
     expect(html).toContain('12')
     expect(html).toContain('2.0K')
-    expect(html).toContain('2 · 合计 2.5K')
+    expect(html).toContain(escaped('2 个 · 合计 2.5K'))
+    expect(html).toContain(escaped(zh['status.cap']))
+    expect(html).not.toContain('{size}')
   })
 
   it('warns when the index exceeds what a session loads', () => {

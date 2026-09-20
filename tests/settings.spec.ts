@@ -44,10 +44,10 @@ async function tempDir(prefix: string): Promise<string> {
 }
 
 describe('resolveMemoryDirectory', () => {
-  it('expands ~ and defaults a blank configuration', () => {
+  it('expands ~, defaults a blank configuration, and keeps one subdirectory per project', () => {
     expect(resolveMemoryDirectory('~/memory', 'proj')).toBe(join(homedir(), 'memory'))
-    expect(resolveMemoryDirectory('', 'proj')).toBe(join(homedir(), '.dsh', 'memory'))
-    expect(DEFAULT_MEMORY_DIRECTORY).toBe('~/.dsh/memory')
+    expect(resolveMemoryDirectory('', 'proj')).toBe(join(homedir(), '.dsh', 'memory', 'proj'))
+    expect(DEFAULT_MEMORY_DIRECTORY).toBe('~/.dsh/memory/{project}')
   })
 
   it('substitutes the project token and leaves a plain directory alone', () => {
@@ -76,6 +76,7 @@ describe('registerMemorySettings', () => {
     const runtime = registerMemorySettings(bareCtx(), {})
     expect(runtime.configuredDirectory()).toBe(DEFAULT_MEMORY_DIRECTORY)
     expect(runtime.enabled()).toBe(true)
+    expect(runtime.claudeCompatible()).toBe(false)
     expect(runtime.indexLines()).toBe(200)
     expect(runtime.indexBytes()).toBe(25_600)
     expect(runtime.maxFileBytes()).toBe(1_048_576)
@@ -104,5 +105,19 @@ describe('registerMemorySettings', () => {
     await writeFile(join(worktree, '.git'), `gitdir: ${join(repo, '.git', 'worktrees', 'wt')}\n`)
     const runtime = registerMemorySettings(bareCtx(), { directory: join(home, '{project}', 'memory') })
     expect(await runtime.directoryFor(worktree)).toBe(join(home, projectSlug(repo), 'memory'))
+  })
+
+  it('uses Claude Code\'s own memory directory when the compatibility switch is on', async () => {
+    const home = await tempDir('dsh-memory-claude-')
+    const repo = join(home, 'repo')
+    await mkdir(join(repo, '.git'), { recursive: true })
+    const runtime = registerMemorySettings(bareCtx(), {
+      claudeCompatible: true,
+      claudeHome: join(home, 'claude'),
+      directory: join(home, 'ignored'),
+    })
+    expect(runtime.claudeCompatible()).toBe(true)
+    expect(await runtime.directoryFor(repo))
+      .toBe(join(home, 'claude', 'projects', projectSlug(repo), 'memory'))
   })
 })

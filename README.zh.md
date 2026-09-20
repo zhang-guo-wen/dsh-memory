@@ -10,13 +10,16 @@
 
 ## 做什么
 
-- **记忆目录**：`MEMORY.md` 索引 + 每个记忆一个话题文件，与 Claude 的自动记忆目录同构。
+- **记忆目录**：`MEMORY.md` 索引 + 每个记忆一个话题文件，与 Claude 的自动记忆目录同构；默认 **每个项目一个子目录**。
 - **memory 工具**：`view` / `create` / `str_replace` / `insert` / `delete` / `rename` 六个命令，路径统一寻址到
   `/memories`，返回文案沿用 Claude 的措辞（含 `Error: File … already exists`、`Please ensure it is unique` 等）。
 - **会话注入**：每个会话的第一次请求折叠一条 instructions 消息——记忆协议 + 当前 `MEMORY.md`（前 200 行或 25 KB，
   与 Claude 相同）。该消息记进 Session 日志，恢复的会话不会重复注入。
-- **设置页「记忆」区块**：总开关、目录输入框 + 目录选择器（原生选择框，宿主只有浏览能力时退化为内置目录浏览器）、
-  目录状态（索引行数/字节、文件数与合计）、`MEMORY.md` 编辑器。
+- **设置页「记忆」区块**：总开关、「兼容 Claude 目录」开关、目录输入框 + 目录选择器（原生选择框，宿主只有浏览能力时
+  退化为内置目录浏览器）、目录状态（索引行数/字节、文件数与合计）、`MEMORY.md` 编辑器。
+
+**「兼容 Claude 目录」默认关闭。** 关闭时记忆写进你自己的目录（可选、可改）；打开后不需要选目录，直接读写 Claude Code 的
+`~/.claude/projects/<项目>/memory`——与 Claude 共用同一份记忆。见 [README.zh.md 配置](#配置)。
 
 CLAUDE.md 一类的指令文件**不属于**本插件：那是 [`@zhang-guo-wen/dsh-claude-compat`](https://github.com/zhang-guo-wen/dsh-claude-compat)
 的职责。两者互不依赖，可单独安装。
@@ -49,7 +52,9 @@ boot 图，不刷新看不到新的设置区块。
 | 字段 | 默认值 | 含义 |
 |---|---|---|
 | `enabled` | `true` | 是否注入索引并注册 `memory` 工具 |
-| `directory` | `~/.dsh/memory` | 记忆目录；支持 `~` 与 `{project}` |
+| `claudeCompatible` | `false` | 直接使用 Claude Code 的记忆目录；开启时 `directory` 被忽略，不用选目录 |
+| `directory` | `~/.dsh/memory/{project}` | 记忆目录；支持 `~` 与 `{project}` |
+| `claudeHome` | `$CLAUDE_CONFIG_DIR` / `$CLAUDE_HOME` / `~/.claude` | Claude 配置目录；「兼容 Claude 目录」下用它定位 `projects/<项目>/memory` |
 | `indexLines` | `200` | 每次会话加载的索引行数上限（与 Claude 相同） |
 | `indexBytes` | `25600` | 每次会话加载的索引字节上限（与 Claude 相同） |
 | `maxFileBytes` | `1048576` | 单个记忆文件的读写上限 |
@@ -59,9 +64,9 @@ boot 图，不刷新看不到新的设置区块。
 
 | 写法 | 解析结果 |
 |---|---|
-| `~/.dsh/memory` | 用户目录下的 `.dsh/memory`，所有项目共用一份 |
-| `~/.dsh/memory/{project}` | 每个项目一份，`{project}` 按 Claude 的 `projects` 目录规则命名 |
-| `~/.claude/projects/{project}/memory` | **直接复用 Claude Code 的自动记忆目录** |
+| `~/.dsh/memory/{project}`（默认） | 每个项目一个独立子目录，互不串味 |
+| `~/.dsh/memory` | 所有项目共用一份（去掉 `{project}` 即为共享） |
+| `~/.claude/projects/{project}/memory` | 等价于打开「兼容 Claude 目录」开关 |
 
 `{project}` 取会话工作目录所属的 git 仓库根（`.git` 文件即链接 worktree，会回溯到主仓库），把
 `[A-Za-z0-9]` 以外的字符全部换成 `-`：`C:\02-codespace\deepseek-harness` → `C--02-codespace-deepseek-harness`，

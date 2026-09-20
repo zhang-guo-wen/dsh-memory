@@ -67,6 +67,7 @@ export class MemoryRemote extends TypertRemoteService {
     ])
     return {
       enabled: this.runtime.enabled(),
+      claudeCompatible: this.runtime.claudeCompatible(),
       configured,
       directory: store.root,
       projectScoped: configured.includes(PROJECT_TOKEN),

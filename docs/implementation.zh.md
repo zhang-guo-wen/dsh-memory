@@ -33,25 +33,31 @@ Claude 把记忆放在一个目录里：索引文件 `MEMORY.md` 加每个记忆
 - name: '@deepseek-ai/dsh-tools'
 - name: '@zhang-guo-wen/dsh-memory'
   config:
-    directory: '~/.claude/projects/{project}/memory'
+    claudeCompatible: true
 ```
 
 | 字段 | 默认值 | 含义 |
 |---|---|---|
 | `enabled` | `true` | 是否注入索引并注册 `memory` 工具 |
-| `directory` | `~/.dsh/memory` | 记忆目录；展开 `~` 与 `{project}` |
+| `claudeCompatible` | `false` | 使用 Claude Code 自己的 `<Claude 配置目录>/projects/<项目>/memory`；开启时忽略 `directory` |
+| `directory` | `~/.dsh/memory/{project}` | 记忆目录；展开 `~` 与 `{project}` |
+| `claudeHome` | `$CLAUDE_CONFIG_DIR`、`$CLAUDE_HOME`、`~/.claude` | `claudeCompatible` 模式下定位 Claude 配置目录 |
 | `indexLines` | `200` | 每次会话加载的索引行数上限 |
 | `indexBytes` | `25600` | 每次会话加载的索引字节上限 |
 | `maxFileBytes` | `1048576` | 单个记忆文件的读写上限 |
 | `projectRootMarkers` | `['.git']` | 识别项目根的目录项 |
 
-`enabled` 与 `directory` 同时是 `memory` 设置命名空间的字段，操作者不用改组合就能搬动存储。
+`enabled`、`directory`、`claudeCompatible` 同时是 `memory` 设置命名空间的字段，操作者不用改组合就能搬动存储。
+`claudeCompatible` 打开时设置页隐藏目录输入框——该模式自己推导目录，没有可选项。
 
 ### 目录解析
 
 `~` 展开为进程用户目录。`{project}` 换成会话项目的 Claude 风格目录名：取会话工作目录所属 git 仓库根
 （`.git` 是文件时按 `gitdir:` 回溯到主仓库），把 `[A-Za-z0-9]` 以外的字符全部换成 `-`；不在仓库里就用工作目录本身。
-解析按会话进行，所以 `{project}` 模板天然让每个项目一份存储。
+解析按会话进行，所以默认的 `~/.dsh/memory/{project}` 天然让每个项目一份存储。
+
+打开 `claudeCompatible` 后目录改为 `<Claude 配置目录>/projects/<项目>/memory`——Claude Code 自己的自动记忆目录，
+不需要选目录。该模式下 `directory` 是被忽略而不是被清空，关掉开关就回到原先配置的目录。
 
 ### `memory` 工具
 
