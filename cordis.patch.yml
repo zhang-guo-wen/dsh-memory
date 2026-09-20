@@ -1,0 +1,3 @@
+- insert:
+    - id: memory
+      name: '@zhang-guo-wen/dsh-memory'
