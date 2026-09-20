@@ -144,6 +144,9 @@ settings page.
 - **No `#` append shortcut**: current official Claude documentation has none either (interactive mode lists only
   `/`, `!`, `@`, `:`, `?`). To record something by hand, edit the index in the settings page or have the model use the
   `memory` tool.
+- **No maintenance of its own**: the plugin never summarizes, archives, or deletes a memory — a write happens only when
+  the model calls the `memory` tool, and a deletion only when the model runs `delete` or you do it from the settings
+  page. The 200-line / 25 KB index bound is a **load** limit (the rest stays on disk, out of the request), not a trim.
 - **Paths outside the memory directory are refused**: `../`, absolute paths, and drive-qualified paths never escape
   `/memories`, and a symlink inside the directory cannot redirect a write outside it.
 
