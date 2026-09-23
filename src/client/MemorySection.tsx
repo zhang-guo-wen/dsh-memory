@@ -6,7 +6,7 @@
  * directory), chooses which project's store the report and the editor describe,
  * and edits the `MEMORY.md` index a session loads.
  *
- * @module @zhang-guo-wen/dsh-memory/client/MemorySection
+ * @module @guowenzhang/dsh-memory/client/MemorySection
  */
 
 import { useState, type ReactNode } from 'react'

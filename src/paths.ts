@@ -9,7 +9,7 @@
  * {@link resolveMemoryPath}, which answers the requested text on refusal so the
  * tool can report Claude's own error string.
  *
- * @module @zhang-guo-wen/dsh-memory/paths
+ * @module @guowenzhang/dsh-memory/paths
  */
 
 import { homedir } from 'node:os'

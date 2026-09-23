@@ -7,7 +7,7 @@
  * every client call fail with a missing namespace instead of a reportable
  * error.
  *
- * @module @zhang-guo-wen/dsh-memory/remote
+ * @module @guowenzhang/dsh-memory/remote
  */
 
 import { stat } from 'node:fs/promises'

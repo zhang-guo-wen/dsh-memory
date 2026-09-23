@@ -11,7 +11,7 @@
  * composition without it still lists the current project and, in Claude mode,
  * Claude's own project directories.
  *
- * @module @zhang-guo-wen/dsh-memory/targets
+ * @module @guowenzhang/dsh-memory/targets
  */
 
 import { readdir, stat } from 'node:fs/promises'

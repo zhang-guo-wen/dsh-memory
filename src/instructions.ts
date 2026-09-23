@@ -8,7 +8,7 @@
  * generic `plugin` source, so a resumed Session that already carries it is not
  * given it twice.
  *
- * @module @zhang-guo-wen/dsh-memory/instructions
+ * @module @guowenzhang/dsh-memory/instructions
  */
 
 import type { Context } from '@deepseek-ai/cordis'
@@ -21,7 +21,7 @@ import { MEMORY_PATH_PREFIX } from './paths.ts'
 import type { MemoryRuntime } from './settings.ts'
 
 /** Package identity recorded on every injected message this plugin produces. */
-export const PLUGIN_ID = '@zhang-guo-wen/dsh-memory'
+export const PLUGIN_ID = '@guowenzhang/dsh-memory'
 
 /** Loader name this plugin's one contributor records. */
 export const MEMORY_LOADER = 'memory-index'

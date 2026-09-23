@@ -28,7 +28,7 @@ can change at any time; while it is on, there is no directory to choose — the 
 `~/.claude/projects/<project>/memory`, shared with Claude itself.
 
 `CLAUDE.md` instruction files are **not** this plugin's surface — that is
-[`@zhang-guo-wen/dsh-claude-compat`](https://github.com/zhang-guo-wen/dsh-claude-compat). The two are independent and
+[`@guowenzhang/dsh-claude-compat`](https://github.com/zhang-guo-wen/dsh-claude-compat). The two are independent and
 install separately.
 
 ## Install
@@ -53,7 +53,7 @@ Restart the host (or let a `patchReload: live` profile recompose), then **hard-r
 browser holds the previous boot graph, so a new settings section is not visible before that.
 
 Remove it, dependency and layer together, with
-`npx @deepseek-ai/dsh plugin --profile web remove @zhang-guo-wen/dsh-memory`.
+`npx @deepseek-ai/dsh plugin --profile web remove @guowenzhang/dsh-memory`.
 
 ## Configuration
 

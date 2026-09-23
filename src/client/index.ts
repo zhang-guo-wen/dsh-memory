@@ -4,9 +4,9 @@
  * `settings.section` entry that presents the memory directory.
  *
  * The section reads and writes the `memory` namespace the Host
- * `@zhang-guo-wen/dsh-memory` plugin owns, so the page and the behavior share
+ * `@guowenzhang/dsh-memory` plugin owns, so the page and the behavior share
  * one setting.
- * @module @zhang-guo-wen/dsh-memory/client
+ * @module @guowenzhang/dsh-memory/client
  */
 
 import type { Context } from '@deepseek-ai/cordis'

@@ -10,7 +10,7 @@
 
 ## 目录
 
-仓库根**就是**包：`package.json` 即 `@zhang-guo-wen/dsh-memory`。
+仓库根**就是**包：`package.json` 即 `@guowenzhang/dsh-memory`。
 这不是风格选择——`dsh plugin add <git-url>` 取的是仓库根，包放在 `packages/*` 下会被装成错误的东西。
 
 - `src/paths.ts` —— 目录解析（`~`、`{project}`）与 `/memories` 路径寻址；越界一律抛 `MemoryPathError`。
@@ -75,7 +75,7 @@ host 侧：`class MemoryRemote extends TypertRemoteService`，构造里 `super(c
    不抛异常——模型是按文案决策的。基础设施故障（盘满、权限）才抛。
 2. **路径不越界。** 所有模型给的路径都过 `resolveMemoryPath`（拒 `..`、绝对路径、盘符），再用目录的 realpath
    检查最近存在的祖先，防止目录内软链接把写入引到外面。
-3. **注入只发生一次，且记进日志。** 消息来源是 `{ kind: 'plugin', plugin: '@zhang-guo-wen/dsh-memory#memory-index' }`
+3. **注入只发生一次，且记进日志。** 消息来源是 `{ kind: 'plugin', plugin: '@guowenzhang/dsh-memory#memory-index' }`
    ——**绝不自造 kind**：Session 格式迁移只认发布版的 kind 表，自造 kind 会让历史会话打不开。
 
 ## 边界：不做自主维护

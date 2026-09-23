@@ -6,7 +6,7 @@
  * one the Host process's own working directory resolves to; `configured` always
  * carries the raw template the user set.
  *
- * @module @zhang-guo-wen/dsh-memory/types
+ * @module @guowenzhang/dsh-memory/types
  */
 
 /** Request for the memory store's current state. */

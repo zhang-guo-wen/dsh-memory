@@ -9,7 +9,7 @@
  * method signature and validates there; the Client only needs a strict-shaped
  * codec so `$mount` accepts the contribution.
  *
- * @module @zhang-guo-wen/dsh-memory/typert
+ * @module @guowenzhang/dsh-memory/typert
  */
 
 import type {
@@ -49,7 +49,7 @@ function codec(typeSymbol: string): TypertCodec {
 
 function descriptor(method: string): InvocationDescriptor {
   const endpoint = `${REMOTE_NAMESPACE}/${method}`
-  const owner = `@zhang-guo-wen/dsh-memory#${endpoint}`
+  const owner = `@guowenzhang/dsh-memory#${endpoint}`
   return {
     id: owner,
     service: REMOTE_NAMESPACE,
@@ -70,7 +70,7 @@ function descriptor(method: string): InvocationDescriptor {
 
 /** Contribution mounted by the browser half to reach the memory store. */
 export const TYPERT_REMOTE: TypertRemoteContribution = {
-  package: '@zhang-guo-wen/dsh-memory',
+  package: '@guowenzhang/dsh-memory',
   descriptors: [
     descriptor('targets'),
     descriptor('status'),

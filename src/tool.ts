@@ -8,7 +8,7 @@
  * happened. A path that escapes `/memories` is answered with the same refusal
  * string rather than thrown, so a confused call reads as guidance.
  *
- * @module @zhang-guo-wen/dsh-memory/tool
+ * @module @guowenzhang/dsh-memory/tool
  */
 
 import type { Context } from '@deepseek-ai/cordis'

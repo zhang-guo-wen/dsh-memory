@@ -85,7 +85,7 @@ describe('memorySource', () => {
   it('records the plugin and its loader under the released plugin kind', () => {
     expect(memorySource()).toEqual({
       kind: 'plugin',
-      plugin: '@zhang-guo-wen/dsh-memory#memory-index',
+      plugin: '@guowenzhang/dsh-memory#memory-index',
       form: 'instructions',
     })
     expect(isMemorySource(memorySource())).toBe(true)

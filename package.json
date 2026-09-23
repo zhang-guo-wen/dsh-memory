@@ -1,5 +1,5 @@
 {
-  "name": "@zhang-guo-wen/dsh-memory",
+  "name": "@guowenzhang/dsh-memory",
   "description": "Claude-compatible memory for DeepSeek Harness: a user-chosen memory directory with MEMORY.md index and topic files, the memory tool, and a settings page",
   "version": "0.1.0",
   "type": "module",

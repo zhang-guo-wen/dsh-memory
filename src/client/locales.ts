@@ -7,7 +7,7 @@
  * Chinese dictionary is part of {@link MemorySectionKey}, and `en` is typed
  * against it, so a new entry cannot ship untranslated.
  *
- * @module @zhang-guo-wen/dsh-memory/client/locales
+ * @module @guowenzhang/dsh-memory/client/locales
  */
 
 /** Locale namespace owned by this plugin. */

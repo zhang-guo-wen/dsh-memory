@@ -13,7 +13,7 @@
  * against the real path of the root, so a symlink planted inside the directory
  * cannot redirect a write outside it.
  *
- * @module @zhang-guo-wen/dsh-memory/store
+ * @module @guowenzhang/dsh-memory/store
  */
 
 import { mkdir, readFile, readdir, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'

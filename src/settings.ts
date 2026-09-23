@@ -7,7 +7,7 @@
  * otherwise; the settings service is read through a small local interface so
  * this package stays composable in trees that do not mount it.
  *
- * @module @zhang-guo-wen/dsh-memory/settings
+ * @module @guowenzhang/dsh-memory/settings
  */
 
 import { readFile, stat } from 'node:fs/promises'

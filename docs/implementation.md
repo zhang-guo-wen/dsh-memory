@@ -3,7 +3,7 @@ description: "Claude-compatible memory for the DeepSeek Harness: the memory dire
 kind: "package-reference"
 ---
 
-# @zhang-guo-wen/dsh-memory
+# @guowenzhang/dsh-memory
 
 English | [中文](implementation.zh.md)
 
@@ -36,7 +36,7 @@ it like any other plugin.
 
 ```yaml
 - name: '@deepseek-ai/dsh-tools'
-- name: '@zhang-guo-wen/dsh-memory'
+- name: '@guowenzhang/dsh-memory'
   config:
     claudeCompatible: true
 ```
@@ -119,7 +119,7 @@ trained model's next call depends on that text, and an abortive error would repl
 
 The contributor listens on `agent/pre-step`, takes the decision `next()` returns, and folds one `instructions` message
 after the last admitted user message of the first step that carries one. The message is recorded under the generic
-`plugin` message source (`@zhang-guo-wen/dsh-memory#memory-index`), so a Session that already holds it — resumed, or
+`plugin` message source (`@guowenzhang/dsh-memory#memory-index`), so a Session that already holds it — resumed, or
 continued after the plugin was mounted — is left alone, and the Session format keeps only the source kinds a released
 distribution produces.
 
@@ -170,7 +170,7 @@ earlier content.
 #### What the model sees
 
 One `instructions`-form user message in the first request of a Session under the loader
-`@zhang-guo-wen/dsh-memory#memory-index`: the memory protocol (directory path, one-file-per-memory frontmatter, the
+`@guowenzhang/dsh-memory#memory-index`: the memory protocol (directory path, one-file-per-memory frontmatter, the
 two-step save, the four memory types, absolute dates) followed by `## Memory index` and the loaded `MEMORY.md`.
 
 #### Token effect

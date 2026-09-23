@@ -3,7 +3,7 @@ description: "DeepSeek Harness 的 Claude 兼容记忆：记忆目录、memory �
 kind: "package-reference"
 ---
 
-# @zhang-guo-wen/dsh-memory
+# @guowenzhang/dsh-memory
 
 [English](implementation.md) | 中文
 
@@ -31,7 +31,7 @@ Claude 把记忆放在一个目录里：索引文件 `MEMORY.md` 加每个记忆
 
 ```yaml
 - name: '@deepseek-ai/dsh-tools'
-- name: '@zhang-guo-wen/dsh-memory'
+- name: '@guowenzhang/dsh-memory'
   config:
     claudeCompatible: true
 ```
@@ -107,7 +107,7 @@ realpath 比对，目录内的软链接无法把写入引到外面。其二，�
 
 注入器监听 `agent/pre-step`，取 `next()` 返回的决策，在**第一个带用户消息的 step** 里把一条 `instructions` 消息插在
 最后一条被接纳的用户消息之后。消息以通用 `plugin` 来源记录
-（`@zhang-guo-wen/dsh-memory#memory-index`），所以已经带它的会话（恢复的、或挂载插件后继续的）不会重复注入，
+（`@guowenzhang/dsh-memory#memory-index`），所以已经带它的会话（恢复的、或挂载插件后继续的）不会重复注入，
 Session 格式里也只会出现发布版能产出的来源 kind。
 
 ### 设置页读的是什么
@@ -143,7 +143,7 @@ Session 格式里也只会出现发布版能产出的来源 kind。
 ### 记忆注入
 
 **模型看到什么**：会话第一次请求里一条 `instructions` 形式的用户消息，来源
-`@zhang-guo-wen/dsh-memory#memory-index`：记忆协议（目录路径、一个记忆一个文件的 frontmatter、两步保存、
+`@guowenzhang/dsh-memory#memory-index`：记忆协议（目录路径、一个记忆一个文件的 frontmatter、两步保存、
 四类记忆、绝对日期）加 `## Memory index` 与加载好的 `MEMORY.md`。
 
 **Token 影响**：协议正文约 450 token；索引最多 `indexLines` 行且不超过 `indexBytes`（默认 200 行 / 25 KB，

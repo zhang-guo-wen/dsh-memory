@@ -21,7 +21,7 @@
 **「兼容 Claude 目录」默认关闭。** 关闭时记忆写进你自己的目录（可选、可改）；打开后不需要选目录，直接读写 Claude Code 的
 `~/.claude/projects/<项目>/memory`——与 Claude 共用同一份记忆。见 [README.zh.md 配置](#配置)。
 
-CLAUDE.md 一类的指令文件**不属于**本插件：那是 [`@zhang-guo-wen/dsh-claude-compat`](https://github.com/zhang-guo-wen/dsh-claude-compat)
+CLAUDE.md 一类的指令文件**不属于**本插件：那是 [`@guowenzhang/dsh-claude-compat`](https://github.com/zhang-guo-wen/dsh-claude-compat)
 的职责。两者互不依赖，可单独安装。
 
 ## 安装
@@ -43,7 +43,7 @@ npx @deepseek-ai/dsh plugin --profile web add "git+ssh://git@github.com/zhang-gu
 装完重启宿主（或在 `patchReload: live` 的 profile 里等热重组），然后**硬刷新浏览器**（Ctrl+F5）——浏览器持有旧的
 boot 图，不刷新看不到新的设置区块。
 
-卸载：`npx @deepseek-ai/dsh plugin --profile web remove @zhang-guo-wen/dsh-memory`。
+卸载：`npx @deepseek-ai/dsh plugin --profile web remove @guowenzhang/dsh-memory`。
 
 ## 配置
 

@@ -7,7 +7,7 @@
  * scope or the Remote and then republishes, so what the page shows is what the
  * Host holds.
  *
- * @module @zhang-guo-wen/dsh-memory/client/settings-controller
+ * @module @guowenzhang/dsh-memory/client/settings-controller
  */
 
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
@@ -15,7 +15,7 @@ import type { DirectoryListing } from '@deepseek-ai/dsh-host-directory-picker/ty
 import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { MemoryIndexView, MemoryStatusResult, MemoryTargetView } from '../types.ts'
 
-/** Settings namespace registered Host-side by @zhang-guo-wen/dsh-memory. */
+/** Settings namespace registered Host-side by @guowenzhang/dsh-memory. */
 export const MEMORY_SETTINGS_NS = 'memory'
 
 /** The fields the memory namespace owns. */

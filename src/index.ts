@@ -12,9 +12,9 @@
  * named `MEMORY.md` and one topic file per memory — so pointing it at a Claude
  * Code `memory/` directory reads and writes exactly the files Claude keeps.
  * `CLAUDE.md` instruction files are not this plugin's surface; the
- * `@zhang-guo-wen/dsh-claude-compat` plugin owns those.
+ * `@guowenzhang/dsh-claude-compat` plugin owns those.
  *
- * @module @zhang-guo-wen/dsh-memory
+ * @module @guowenzhang/dsh-memory
  */
 
 import type { Context } from '@deepseek-ai/cordis'

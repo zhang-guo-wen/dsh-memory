@@ -38,7 +38,7 @@ async function loadYaml(lines: readonly string[]): Promise<Context> {
   const modules = new Map<string, unknown>([
     ['@deepseek-ai/dsh-system-prompt', SystemPrompt],
     ['@deepseek-ai/dsh-tools', ToolRuntime],
-    ['@zhang-guo-wen/dsh-memory', Memory],
+    ['@guowenzhang/dsh-memory', Memory],
   ])
   context.loader.internal = {
     version: 'v2',
@@ -61,7 +61,7 @@ describe('real Loader composition', () => {
     const loaded = await loadYaml([
       "- name: '@deepseek-ai/dsh-system-prompt'",
       "- name: '@deepseek-ai/dsh-tools'",
-      "- name: '@zhang-guo-wen/dsh-memory'",
+      "- name: '@guowenzhang/dsh-memory'",
       '  config:',
       '    directory: ' + JSON.stringify(memoryRoot),
     ])
@@ -101,7 +101,7 @@ describe('real Loader composition', () => {
     const loaded = await loadYaml([
       "- name: '@deepseek-ai/dsh-system-prompt'",
       "- name: '@deepseek-ai/dsh-tools'",
-      "- name: '@zhang-guo-wen/dsh-memory'",
+      "- name: '@guowenzhang/dsh-memory'",
       '  disabled: true',
     ])
     expect(loaded.tools.get('memory')).toBeUndefined()
@@ -113,7 +113,7 @@ describe('real Loader composition', () => {
     const loaded = await loadYaml([
       "- name: '@deepseek-ai/dsh-system-prompt'",
       "- name: '@deepseek-ai/dsh-tools'",
-      "- name: '@zhang-guo-wen/dsh-memory'",
+      "- name: '@guowenzhang/dsh-memory'",
       '  config:',
       '    enabled: false',
       '    directory: ' + JSON.stringify(memoryRoot),
