@@ -4,8 +4,8 @@
  * Claude loads the memory index into every session and describes the memory
  * protocol beside it, so this plugin folds one `instructions` message — the
  * protocol text plus the current `MEMORY.md` — into the first request that
- * carries a user message. The message is recorded on the Session log under the
- * generic `plugin` source, so a resumed Session that already carries it is not
+ * carries a user message. The message is recorded on the Session log under this
+ * plugin's own source kind, so a resumed Session that already carries it is not
  * given it twice.
  *
  * @module @guowenzhang/dsh-memory/instructions
@@ -14,7 +14,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { PreStepDecision } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { MessageSource, UserMessage } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed, MessageSource, UserMessage } from '@deepseek-ai/dsh-llm'
 import type { Session } from '@deepseek-ai/dsh-session'
 import { MEMORY_INDEX_NAME, MemoryStore, type MemoryIndex } from './store.ts'
 import { MEMORY_PATH_PREFIX } from './paths.ts'
@@ -26,24 +26,41 @@ export const PLUGIN_ID = '@guowenzhang/dsh-memory'
 /** Loader name this plugin's one contributor records. */
 export const MEMORY_LOADER = 'memory-index'
 
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'plugin:@guowenzhang/dsh-memory#memory-index':
+      { kind: 'plugin:@guowenzhang/dsh-memory#memory-index' } & ContextFormed
+  }
+}
+
 /**
- * The source for the memory instructions message. The loader name rides in
- * `plugin` so the transcript still names the contributor, while the durable
- * kind stays inside the Session format's released set.
+ * The source for the memory instructions message: this plugin's own kind, which
+ * names the contributor the transcript shows, carrying the instructions form.
+ *
+ * The harness retired the generic `{ kind: 'plugin', plugin }` wrapper — a
+ * durable row that still names it is refused — so a producer declares its own
+ * kind. Its spelling is the one the conversion of that retired record writes, so
+ * a Session resumed across the conversion and one written now agree on one
+ * identity.
  * @returns an instructions-form model source owned by this plugin.
  */
 export function memorySource(): MessageSource {
-  return { kind: 'plugin', plugin: `${PLUGIN_ID}#${MEMORY_LOADER}`, form: 'instructions' }
+  return { kind: `plugin:${PLUGIN_ID}#${MEMORY_LOADER}`, form: 'instructions' }
 }
 
 /**
  * Whether one logged message source came from this plugin's memory contributor.
+ *
+ * The retired generic `plugin` wrapper this plugin wrote before that kind
+ * existed still answers yes, so a Session resumed from an older log is not given
+ * the same index a second time. Reading it back never writes it again.
  * @param source - a logged message's `source` value, of unknown provenance.
  * @returns whether this plugin already supplied the memory instructions.
  */
 export function isMemorySource(source: unknown): boolean {
   if (typeof source !== 'object' || source === null) return false
   const record = source as { kind?: unknown; plugin?: unknown }
+  if (record.kind === `plugin:${PLUGIN_ID}#${MEMORY_LOADER}`) return true
   return record.kind === 'plugin' && record.plugin === `${PLUGIN_ID}#${MEMORY_LOADER}`
 }
 

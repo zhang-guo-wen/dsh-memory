@@ -3,16 +3,16 @@
  * `memoryStore` Remote onto the settings section snapshot.
  *
  * The section owns one draft per writable value (the directory field and the
- * index editor) and one host report; every action commits through the settings
- * scope or the Remote and then republishes, so what the page shows is what the
- * Host holds.
+ * index editor) and one host report; every action commits through the
+ * configuration form or the Remote and then republishes, so what the page shows
+ * is what the Host holds.
  *
  * @module @guowenzhang/dsh-memory/client/settings-controller
  */
 
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { DirectoryListing } from '@deepseek-ai/dsh-host-directory-picker/types'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { MemoryIndexView, MemoryStatusResult, MemoryTargetView } from '../types.ts'
 
 /** Settings namespace registered Host-side by @guowenzhang/dsh-memory. */
@@ -137,11 +137,11 @@ export class MemorySectionController {
   private notice: string | null = null
 
   /**
-   * @param scope - bound `memory` settings scope.
+   * @param scope - the `memory` configuration form.
    * @param host - the Remote calls the section drives.
    */
   constructor(
-    private readonly scope: SettingsScope<MemoryFlags>,
+    private readonly scope: ConfigForm<MemoryFlags>,
     private readonly host: MemoryHostCalls,
   ) {
     this.store = createSnapshotStore(this.projection())

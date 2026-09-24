@@ -12,7 +12,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-// Type-only: the settings namespace scope merge (ctx.settingsScope) and slot types.
+// Type-only: the configuration-form service merge (ctx.configForms) and slot types.
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: the slot registry Context merge (ctx.slots).
@@ -54,7 +54,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 /** Required services (cordis fiber inject). The directory picker is optional. */
-export const inject = ['slots', 'locale', 'settingsScope', 'remote']
+export const inject = ['slots', 'locale', 'configForms', 'remote']
 
 /** The namespace service this plugin mounts itself — fetched via `ctx.get`, never injected. */
 interface MemoryStoreNamespace {
@@ -125,10 +125,10 @@ export async function apply(ctx: Context): Promise<void> {
   }
 
   const controller = new MemorySectionController(
-    ctx.settingsScope.bind<MemoryFlags>({ namespace: MEMORY_SETTINGS_NS }),
+    ctx.configForms.get<MemoryFlags>(MEMORY_SETTINGS_NS),
     host,
   )
-  ctx.effect(() => () => { controller.dispose() }, 'ui-memory: scope')
+  ctx.effect(() => () => { controller.dispose() }, 'ui-memory: settings form')
   controller.start()
 
   ctx.slots.inject('settings.section', () => ctx.slots.register({

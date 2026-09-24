@@ -82,15 +82,19 @@ describe('renderMemoryInstructions', () => {
 })
 
 describe('memorySource', () => {
-  it('records the plugin and its loader under the released plugin kind', () => {
+  it('records the plugin and its loader under a producer-owned kind', () => {
     expect(memorySource()).toEqual({
-      kind: 'plugin',
-      plugin: '@guowenzhang/dsh-memory#memory-index',
+      kind: 'plugin:@guowenzhang/dsh-memory#memory-index',
       form: 'instructions',
     })
     expect(isMemorySource(memorySource())).toBe(true)
+    expect(isMemorySource({ kind: 'plugin:other#loader' })).toBe(false)
     expect(isMemorySource({ kind: 'plugin', plugin: 'other' })).toBe(false)
     expect(isMemorySource(undefined)).toBe(false)
+  })
+
+  it('still recognizes the retired generic wrapper an older Session wrote', () => {
+    expect(isMemorySource({ kind: 'plugin', plugin: '@guowenzhang/dsh-memory#memory-index' })).toBe(true)
   })
 })
 
