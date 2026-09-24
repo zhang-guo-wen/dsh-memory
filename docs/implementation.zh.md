@@ -106,9 +106,9 @@ realpath 比对，目录内的软链接无法把写入引到外面。其二，�
 ### 注入时机
 
 注入器监听 `agent/pre-step`，取 `next()` 返回的决策，在**第一个带用户消息的 step** 里把一条 `instructions` 消息插在
-最后一条被接纳的用户消息之后。消息以通用 `plugin` 来源记录
-（`@guowenzhang/dsh-memory#memory-index`），所以已经带它的会话（恢复的、或挂载插件后继续的）不会重复注入，
-Session 格式里也只会出现发布版能产出的来源 kind。
+最后一条被接纳的用户消息之后。消息带的是本插件**自己声明的**来源 kind（`plugin:@guowenzhang/dsh-memory#memory-index`，
+经 `MessageSourceMap` 声明合并），拼法就是 harness 转换旧通用 `plugin` 包装时写下的那个——所以已经带它的会话
+（恢复的、或挂载插件后继续的）无论日志里是哪种拼法都不会重复注入。
 
 ### 设置页读的是什么
 

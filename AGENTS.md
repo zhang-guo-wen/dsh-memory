@@ -19,7 +19,8 @@
   索引读取上限、目录列举、软链接越界检查。**不抛错，返回文案**：Claude 的措辞就是契约。
 - `src/settings.ts` —— `memory` 设置命名空间（`enabled` / `directory` / `claudeCompatible`）、组合层 `Config`、
   `{project}` 的项目名解析（git 仓库根 + worktree 回溯）、`claudeCompatible` 下的 Claude 目录解析。
-- `src/instructions.ts` —— 注入文本与 `agent/pre-step` 监听：每个会话折叠一次，来源记为通用 `plugin` kind。
+- `src/instructions.ts` —— 注入文本与 `agent/pre-step` 监听：每个会话折叠一次，来源是本插件自己的
+  `plugin:@guowenzhang/dsh-memory#memory-index` kind。
 - `src/tool.ts` —— `defineTool` 的 `memory` 工具：参数表、按命令校验、卡片呈现。
 - `src/remote.ts` / `src/typert.ts` / `src/types.ts` —— 设置页读写的 Typert Remote（`memoryStore`：`targets` /
   `status` / `readIndex` / `writeIndex`）。
@@ -41,6 +42,9 @@ npm run build       # tsdown（host） + node build-client.mjs（client）
 - host：`tsdown` 打 `src/index.ts` → `lib/index.mjs`，所有 `@deepseek-ai/*` 保持 external。
 - client：`build-client.mjs`（rolldown）→ `lib/client.js`，包成 `window.__ModuleLoader__.load({ id, factory })`，
   react / `@deepseek-ai/*` external，`.module.css` 用 lightningcss 编译并内联。
+- `devDependencies` 里的 `@deepseek-ai/*` **钉死在验证过的版本**（当前 `0.1.7-alpha.2`，与 harness checkout 的
+  `package.json` 一致），不写 `^`：这些包就是编译时的接口面，`^` 会解析到更高的预发布版把接口换掉，而运行时用的是
+  宿主那一份。升 harness 时连同这里一起改，再跑 `npm run typecheck` 与全量 spec。
 
 **Node 不解析 TC39 装饰器。** tsdown 默认不降级装饰器，所以 `tsdown.config.ts` 里有一个
 `lowerDecorators` transform（用 `typescript` 的 `transpileModule`）。少了它，`MemoryRemote` 上的 `@Remote`
@@ -75,8 +79,10 @@ host 侧：`class MemoryRemote extends TypertRemoteService`，构造里 `super(c
    不抛异常——模型是按文案决策的。基础设施故障（盘满、权限）才抛。
 2. **路径不越界。** 所有模型给的路径都过 `resolveMemoryPath`（拒 `..`、绝对路径、盘符），再用目录的 realpath
    检查最近存在的祖先，防止目录内软链接把写入引到外面。
-3. **注入只发生一次，且记进日志。** 消息来源是 `{ kind: 'plugin', plugin: '@guowenzhang/dsh-memory#memory-index' }`
-   ——**绝不自造 kind**：Session 格式迁移只认发布版的 kind 表，自造 kind 会让历史会话打不开。
+3. **注入只发生一次，且记进日志。** 消息来源是本插件**自己声明的** kind
+   `plugin:@guowenzhang/dsh-memory#memory-index`（`MessageSourceMap` 声明合并）——harness 已经废掉通用的
+   `{ kind: 'plugin', plugin }` 包装：V4 会话拒绝它，V3→V4 迁移把旧记录写成 `plugin:<plugin>`，所以声明成同一个
+   拼法，恢复的旧会话与新会话才对得上一个身份。`isMemorySource` 仍认旧的包装，只为不重复注入，绝不再写它。
 
 ## 边界：不做自主维护
 
@@ -122,3 +128,75 @@ client 半边相反：bundle 按内容 rev 提供，刷新页面就会取到新�
 6. CSS module 里 JSX 引用但 CSS 未定义的类 → `undefined`，静默无样式。
 7. 改 client 不 bump `HANDOFF_ID` / 不硬刷新 → 浏览器跑旧 bundle（"改动没生效"）。
 8. 设置 schema 里放会拒绝值的校验 → 一个手写错的字段让整个命名空间回退；`directory` 只校验成字符串。
+9. **消息来源写回通用 `{ kind: 'plugin', plugin }`** → V4 会话直接拒绝该行（"requires a producer-owned source
+   kind"），注入的那一步落不进日志。kind 必须是自己声明合并进 `MessageSourceMap` 的那个 `plugin:<包名>#<loader>`。
+10. **客户端 inject 的服务名对不上宿主那版 harness** → 整个 client 半边停在 pending（浏览器只显示
+   "Failed to load plugins"）。设置页的表单服务在 0.1.7 从 `settingsScope` 改名为 `configForms`：
+   `ctx.configForms.get<T>(命名空间)` 返回 `ConfigForm<T>`，读写契约见 `src/client/settings-controller.ts`。
+
+## 安装
+
+`lib/` 是提交进仓库的构建产物（见「目录」「构建」两节），所以从 git 装完即可运行，**机器上不需要构建步骤**。
+
+```sh
+# npm 官方源
+npx @deepseek-ai/dsh plugin --profile web add @guowenzhang/dsh-memory
+
+# HTTPS
+npx @deepseek-ai/dsh plugin --profile web add https://github.com/zhang-guo-wen/dsh-memory.git
+
+# SSH
+npx @deepseek-ai/dsh plugin --profile web add git+ssh://git@github.com/zhang-guo-wen/dsh-memory.git
+
+# 按 tag 固定版本
+npx @deepseek-ai/dsh plugin --profile web add "git+ssh://git@github.com/zhang-guo-wen/dsh-memory.git#v0.1.0"
+
+# 本地目录（pnpm 建 symlink，改完源码重建 lib/ 后重启宿主即生效，无需重装）
+npx @deepseek-ai/dsh plugin --profile web add /absolute/path/to/dsh-memory
+
+# 卸载：依赖与 layer 一起移除
+npx @deepseek-ai/dsh plugin --profile web remove @guowenzhang/dsh-memory
+```
+
+装完重启宿主；`patchReload: live` 的热重组与浏览器硬刷新（Ctrl+F5）语义见「部署」一节——浏览器持有上一次的 boot 图，不刷新看不到新的设置区块。
+
+## 组合接线
+
+`cordis.patch.yml` 把插件行插进组合的 bundle 层：
+
+```yaml
+- insert:
+    - id: memory
+      name: '@guowenzhang/dsh-memory'
+```
+
+`package.json` 的 `dsh.bundle.patch` 指向这份 patch，`dsh.client.inject` 列全浏览器半边 apply 用到的服务提供包（`@deepseek-ai/dsh-api-gateway`、`@deepseek-ai/dsh-api-remotes`、`@deepseek-ai/dsh-api-workspace-controller`、`@deepseek-ai/dsh-client-locale`、`@deepseek-ai/dsh-client-store`、`@deepseek-ai/dsh-client-ui-primitives`、`@deepseek-ai/dsh-client-ui-renderer`、`@deepseek-ai/dsh-client-ui-settings`、`@deepseek-ai/dsh-client-ui-slots`），`platform` 为 `web`。`exports` 另导出 `./client`（`lib/client.js`）与 `./cordis.patch.yml`。
+
+## 配置
+
+所有字段都有可用默认值。设置页的「记忆」区块写 `enabled`、`claudeCompatible` 与 `directory`，其余是组合层字段（`claudeHome`、`indexLines`、`indexBytes`、`maxFileBytes`、`projectRootMarkers`）。
+
+| 字段 | 默认值 | 含义 |
+|---|---|---|
+| `enabled` | `true` | 是否注入索引并注册 `memory` 工具 |
+| `claudeCompatible` | `false` | 直接使用 Claude Code 的记忆目录；开启时 `directory` 被忽略，不用选目录 |
+| `directory` | `~/.dsh/memory/{project}` | 记忆目录；支持 `~` 与 `{project}` |
+| `claudeHome` | `$CLAUDE_CONFIG_DIR` / `$CLAUDE_HOME` / `~/.claude` | Claude 配置目录；「兼容 Claude 目录」下用它定位 `projects/<项目>/memory` |
+| `indexLines` | `200` | 每次会话加载的索引行数上限（与 Claude 相同） |
+| `indexBytes` | `25600` | 每次会话加载的索引字节上限（与 Claude 相同） |
+| `maxFileBytes` | `1048576` | 单个记忆文件的读写上限 |
+| `projectRootMarkers` | `['.git']` | 向上寻找项目根时认的目录项 |
+
+## 测试
+
+spec 在 `tests/`，不属于 harness monorepo 的测试门禁；两条命令都在它旁边的 harness checkout 里运行。
+
+```sh
+# 全量（推荐）：用 checkout 的 vitest，经 tsconfig.base.json 的 paths 解析 @deepseek-ai/*
+node_modules/.bin/vitest run --root dsh-memory --config vitest.harness.config.ts
+
+# 自足子集：用本包自己的 node_modules，只跑 tests/**/*.spec.ts
+node_modules/.bin/vitest run --root dsh-memory
+```
+
+全量覆盖 `store.spec.ts` / `settings.spec.ts` / `instructions.spec.ts` / `tool.spec.ts` / `loader-composition.spec.ts` / `memory-section.spec.tsx` / `settings-controller.spec.ts` 七个 spec；自足子集只有前四个——`loader-composition.spec.ts` 需要 checkout 的 Loader 与注册表包，`memory-section.spec.tsx` 需要 React，`settings-controller.spec.ts` 要 `dsh-client-store` 的 Zustand 引擎。逐项覆盖范围见 [tests/README.md](tests/README.md)。

@@ -118,10 +118,10 @@ trained model's next call depends on that text, and an abortive error would repl
 ### Injection timing
 
 The contributor listens on `agent/pre-step`, takes the decision `next()` returns, and folds one `instructions` message
-after the last admitted user message of the first step that carries one. The message is recorded under the generic
-`plugin` message source (`@guowenzhang/dsh-memory#memory-index`), so a Session that already holds it — resumed, or
-continued after the plugin was mounted — is left alone, and the Session format keeps only the source kinds a released
-distribution produces.
+after the last admitted user message of the first step that carries one. The message carries this plugin's own source
+kind (`plugin:@guowenzhang/dsh-memory#memory-index`), declared into `MessageSourceMap` and spelled the way the harness
+converts the retired generic `plugin` wrapper — so a Session that already holds it, resumed or continued after the
+plugin was mounted, is left alone whichever of the two spellings its log carries.
 
 ### Where the settings page reads from
 
