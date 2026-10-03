@@ -2,6 +2,8 @@
 
 English | [中文](README.zh.md)
 
+Claude-compatible memory for DeepSeek Harness: a memory directory with a `MEMORY.md` index and one file per memory, a `memory` tool, and a settings page.
+
 ## Background: DeepSeek Harness
 
 DeepSeek Harness (`dsh`) is the open-source agent harness from DeepSeek AI, where nearly every capability is a plugin on [Cordis](https://github.com/cordiverse/cordis). It is in **developer preview** and iterating fast, so expect compatibility-breaking changes ([docs](https://deepseek-harness.github.io/deepseek-harness/), `0.1.7-alpha.*`); this plugin is a standalone third-party package that resolves `@deepseek-ai/*` from the running host.

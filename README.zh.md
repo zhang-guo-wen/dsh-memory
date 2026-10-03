@@ -2,6 +2,8 @@
 
 [English](README.md) | 中文
 
+为 DeepSeek Harness 提供 Claude 形态的记忆：记忆目录（`MEMORY.md` 索引 + 一记忆一文件）、`memory` 工具与设置页。
+
 ## 背景：DeepSeek Harness
 
 DeepSeek Harness（`dsh`）是 DeepSeek AI 开源的 agent harness，几乎所有能力都是 [Cordis](https://github.com/cordiverse/cordis) 插件。它处于 **developer preview** 阶段、迭代很快，会有破坏性变更（[文档站](https://deepseek-harness.github.io/deepseek-harness/)，`0.1.7-alpha.*`）；本插件是独立第三方包，`@deepseek-ai/*` 运行时从宿主解析。
