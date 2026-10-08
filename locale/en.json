@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "dsh-memory",
+    "description": "Claude-compatible memory with a MEMORY.md index, topic files, a memory tool and a settings page."
+  }
+}

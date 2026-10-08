@@ -4,6 +4,8 @@
 
 为 DeepSeek Harness 提供 Claude 形态的记忆：记忆目录（`MEMORY.md` 索引 + 一记忆一文件）、`memory` 工具与设置页。
 
+插件列表的显示名称与介绍支持英文和中文，随 Harness 语言设置显示，英文为默认回退；英文名称为去掉 npm scope 的原包名，中文名称说明用途，安装仍使用不变的真实包名。
+
 ## 背景：DeepSeek Harness
 
 DeepSeek Harness（`dsh`）是 DeepSeek AI 开源的 agent harness，几乎所有能力都是 [Cordis](https://github.com/cordiverse/cordis) 插件。它处于 **developer preview** 阶段、迭代很快，会有破坏性变更（[文档站](https://deepseek-harness.github.io/deepseek-harness/)，`0.1.7-alpha.*`）；本插件是独立第三方包，`@deepseek-ai/*` 运行时从宿主解析。
