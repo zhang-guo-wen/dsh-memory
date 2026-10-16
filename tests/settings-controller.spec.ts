@@ -147,4 +147,125 @@ describe('MemorySectionController', () => {
     expect(snapshot.status.kind === 'ready' && snapshot.status.value.directory).toBe('/home/u/.dsh/memory/-repo')
     expect(snapshot.index).toEqual({ kind: 'ready', exists: false, content: '', saved: '' })
   })
+
+  it('publishes the running write and the outcome it ends with', async () => {
+    const stub = hostStub()
+    const { form } = formStub({ directory: '~/memory/{project}' })
+    let release: () => void = () => {}
+    const gate = new Promise<void>(resolve => { release = resolve })
+    stub.writeIndex = async (_target, content) => { await gate; stub.written.push(content) }
+    const controller = new MemorySectionController(form, stub)
+    const face = controller.inject()
+    controller.start()
+    await vi.waitFor(() => { expect(face.hooks.memory.getSnapshot().index.kind).toBe('ready') })
+
+    face.saveIndex()
+    // The write is visible while it is in flight, before the Host answers.
+    expect(face.hooks.memory.getSnapshot().busy).toBe('index')
+    expect(face.hooks.memory.getSnapshot().notice).toBeNull()
+
+    release()
+    await vi.waitFor(() => {
+      expect(face.hooks.memory.getSnapshot().notice).toEqual({ tone: 'success', key: 'notice.indexSaved' })
+    })
+    expect(face.hooks.memory.getSnapshot().busy).toBe('')
+    expect(stub.written).toEqual([''])
+  })
+
+  it('keeps the last report and offers a retry when a refresh fails', async () => {
+    const stub = hostStub()
+    const controller = new MemorySectionController(formStub().form, stub)
+    const face = controller.inject()
+    controller.start()
+    await vi.waitFor(() => { expect(face.hooks.memory.getSnapshot().status.kind).toBe('ready') })
+
+    stub.status = async () => { throw new Error('gateway down') }
+    face.refresh()
+
+    await vi.waitFor(() => {
+      expect(face.hooks.memory.getSnapshot().notice)
+        .toEqual({ tone: 'error', message: 'gateway down', retry: 'refresh' })
+    })
+    // The report the Host already answered with stays on screen, and the section
+    // is idle again once the read settles.
+    const status = face.hooks.memory.getSnapshot().status
+    expect(status.kind === 'ready' && status.value.directory).toBe('/home/u/.dsh/memory/-repo')
+    expect(face.hooks.memory.getSnapshot().busy).toBe('')
+
+    stub.status = async target => statusResult({ target })
+    face.retryNotice()
+    await vi.waitFor(() => { expect(face.hooks.memory.getSnapshot().notice).toBeNull() })
+  })
+
+  it('runs the failed write again from its notice', async () => {
+    const stub = hostStub()
+    const controller = new MemorySectionController(formStub().form, stub)
+    const face = controller.inject()
+    controller.start()
+    await vi.waitFor(() => { expect(face.hooks.memory.getSnapshot().index.kind).toBe('ready') })
+
+    stub.writeIndex = async () => { throw new Error('disk full') }
+    face.saveIndex()
+    await vi.waitFor(() => {
+      expect(face.hooks.memory.getSnapshot().notice)
+        .toEqual({ tone: 'error', message: 'disk full', retry: 'index' })
+    })
+
+    stub.writeIndex = async (_target, content) => { stub.written.push(content) }
+    face.retryNotice()
+    await vi.waitFor(() => {
+      expect(face.hooks.memory.getSnapshot().notice).toEqual({ tone: 'success', key: 'notice.indexSaved' })
+    })
+    expect(stub.written).toEqual([''])
+  })
+
+  it('offers the failed switch write again instead of making the user find it', async () => {
+    const stub = formStub()
+    const controller = new MemorySectionController(stub.form, hostStub())
+    const face = controller.inject()
+
+    stub.form.set = async () => { throw new Error('gateway down') }
+    face.setEnabled(false)
+
+    await vi.waitFor(() => {
+      expect(face.hooks.memory.getSnapshot().notice)
+        .toEqual({ tone: 'error', message: 'gateway down', retry: 'switch' })
+    })
+    // The switch shows what the Host still holds.
+    expect(face.hooks.memory.getSnapshot().enabled).toBe(true)
+
+    stub.form.set = async (field, next) => { stub.writes.push({ field, value: next }); return true }
+    face.retryNotice()
+    await vi.waitFor(() => { expect(face.hooks.memory.getSnapshot().notice).toBeNull() })
+    expect(stub.writes.at(-1)).toEqual({ field: 'enabled', value: false })
+  })
+
+  it('keeps an unsaved index draft across a refresh and reloads it on demand', async () => {
+    const stub = hostStub()
+    const controller = new MemorySectionController(formStub().form, stub)
+    const face = controller.inject()
+    controller.start()
+    await vi.waitFor(() => { expect(face.hooks.memory.getSnapshot().index.kind).toBe('ready') })
+
+    stub.readIndex = async () => ({ exists: true, content: 'from disk\n' })
+    face.refresh()
+    await vi.waitFor(() => {
+      const index = face.hooks.memory.getSnapshot().index
+      expect(index.kind === 'ready' && index.saved).toBe('from disk\n')
+    })
+
+    face.editIndex('draft\n')
+    face.refresh()
+    await vi.waitFor(() => {
+      const index = face.hooks.memory.getSnapshot().index
+      // A refresh keeps the draft: only the explicit reload replaces it.
+      expect(index.kind === 'ready' && index.content).toBe('draft\n')
+    })
+
+    face.reloadIndex()
+    await vi.waitFor(() => {
+      const index = face.hooks.memory.getSnapshot().index
+      expect(index.kind === 'ready' && index.content).toBe('from disk\n')
+    })
+  })
 })

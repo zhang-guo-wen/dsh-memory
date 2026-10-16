@@ -44,6 +44,7 @@ const READY: MemorySectionState = {
     { id: 'workspace:w2', label: 'nocobase', detail: '/work/nocobase', directory: '/home/u/.dsh/memory/-work-nocobase', exists: false },
   ],
   target: 'current',
+  busy: '',
   notice: null,
 }
 
@@ -65,6 +66,7 @@ function render(locale: 'zh' | 'en', state: Partial<MemorySectionState> = {}): s
     editDirectory: () => {},
     saveDirectory: () => {},
     refresh: () => {},
+    reloadIndex: () => {},
     selectTarget: () => {},
     editIndex: () => {},
     saveIndex: () => {},
@@ -72,6 +74,7 @@ function render(locale: 'zh' | 'en', state: Partial<MemorySectionState> = {}): s
     browse: () => {},
     closeBrowser: () => {},
     useBrowsed: () => {},
+    retryNotice: () => {},
   } as unknown as MemorySectionProps
   return renderToStaticMarkup(<MemorySection {...props} />)
 }
@@ -166,6 +169,72 @@ describe('memory settings section', () => {
     const html = render('zh', { available: false, writable: false })
     expect(html).toContain(escaped(zh.unavailable))
     expect(html).toContain('disabled=""')
+  })
+
+  it('shows the report skeleton while the first read is in flight', () => {
+    const html = render('zh', { status: { kind: 'loading' }, index: { kind: 'loading' } })
+    // Both first reads announce themselves, and the editor is a placeholder of
+    // its own size rather than an empty enabled field.
+    expect(html).toContain('aria-busy="true"')
+    expect(html).toContain(escaped(zh['status.loading']))
+    expect(html).not.toContain('<textarea')
+  })
+
+  it('reports a failed report read with the reason and a retry', () => {
+    const html = render('zh', { status: { kind: 'error', message: 'connect ECONNREFUSED' } })
+    expect(html).toContain(escaped(zh['status.error']))
+    expect(html).toContain('connect ECONNREFUSED')
+    expect(html).toContain(escaped(zh.retry))
+    expect(html).toContain('role="alert"')
+  })
+
+  it('reports a failed index read instead of an empty editor', () => {
+    const html = render('zh', { index: { kind: 'error', message: 'EACCES' } })
+    expect(html).toContain(escaped(zh['index.loadFailed']))
+    expect(html).toContain('EACCES')
+    expect(html).not.toContain('<textarea')
+    // The reload control is what reads the file again.
+    expect(html).toContain(escaped(zh['index.reload']))
+  })
+
+  it('names the running write on the control that started it', () => {
+    expect(render('zh', { busy: 'directory' })).toContain(escaped(zh.saving))
+    expect(render('zh', { busy: 'reload' })).toContain(escaped(zh.refreshing))
+  })
+
+  it('reports the last action: a saved line, or the reason and a retry', () => {
+    const saved = render('zh', { notice: { tone: 'success', key: 'notice.indexSaved' } })
+    expect(saved).toContain(escaped(zh['notice.indexSaved']))
+    expect(saved).toContain('role="status"')
+
+    const failed = render('zh', {
+      notice: { tone: 'error', message: 'EACCES: permission denied', retry: 'index' },
+    })
+    expect(failed).toContain(escaped(zh['error.action']))
+    expect(failed).toContain('EACCES: permission denied')
+    expect(failed).toContain(escaped(zh.retry))
+    expect(failed).toContain('role="alert"')
+
+    // A failure whose control is still on screen carries no retry of its own.
+    const noRetry = render('zh', { notice: { tone: 'error', message: 'nope', retry: null } })
+    expect(noRetry).toContain('nope')
+    expect(noRetry).not.toContain(escaped(zh.retry))
+  })
+
+  it('marks the directory field while its draft is unsaved', () => {
+    const dirty = render('zh', { directory: '~/memory/{project}', savedDirectory: '~/other' })
+    expect(dirty).toContain(escaped(zh['directory.unsaved']))
+    expect(render('zh')).not.toContain(escaped(zh['directory.unsaved']))
+  })
+
+  it('says what to do when the browsed directory has no subdirectories', () => {
+    const html = render('zh', {
+      browser: {
+        kind: 'ready',
+        listing: { path: '/home/u', home: '/home/u', crumbs: [], entries: [], truncated: false },
+      },
+    })
+    expect(html).toContain(escaped(zh['browser.empty']))
   })
 
   it('keeps both dictionaries in step', () => {

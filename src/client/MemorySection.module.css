@@ -1,4 +1,11 @@
+/*
+ * The section renders into the settings column, which already owns the inset
+ * and the scroll; this page adds no second width or centring and keeps the
+ * built-in settings pages' 20px vertical rhythm. It is its own query container,
+ * so the compact layout follows the column it is given rather than the window.
+ */
 .section {
+  container: memory-section / inline-size;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -29,13 +36,13 @@
 }
 
 .switchLabel {
-  font-size: 13px;
+  font: var(--dsw-font-xs-13);
   font-weight: 600;
   color: var(--dsw-alias-label-primary);
 }
 
 .switchDesc {
-  font-size: 12px;
+  font: var(--dsw-font-xxs-12);
   color: var(--dsw-alias-label-secondary);
 }
 
@@ -48,16 +55,20 @@
 }
 
 .fieldLabel {
-  font-size: 13px;
+  font: var(--dsw-font-xs-13);
   font-weight: 600;
   color: var(--dsw-alias-label-primary);
 }
 
 .fieldHint {
-  font-size: 11.5px;
-  line-height: 17px;
+  font: var(--dsw-font-xxs-12);
   color: var(--dsw-alias-label-tertiary);
   overflow-wrap: anywhere;
+}
+
+/* The directory field's draft differs from what the Host holds. */
+.unsaved {
+  color: var(--dsw-alias-state-warn-label);
 }
 
 .actions {
@@ -77,13 +88,12 @@
   width: 100%;
   min-height: 180px;
   padding: 10px 12px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 10px;
+  border: .5px solid var(--dsw-alias-border-l2);
+  border-radius: var(--dsw-radius-lg);
   background: var(--dsw-alias-bg-base);
   color: var(--dsw-alias-label-primary);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  line-height: 18px;
+  font: var(--dsw-font-xxs-12);
+  font-family: var(--ds-font-family-code);
   resize: vertical;
   overflow-wrap: anywhere;
 }
@@ -99,15 +109,15 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px 14px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
+  border: .5px solid var(--dsw-alias-border-l2);
+  border-radius: var(--dsw-radius-lg);
 }
 
 .stateRow {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  font-size: 12px;
+  font: var(--dsw-font-xxs-12);
 }
 
 .stateKey {
@@ -121,8 +131,8 @@
 }
 
 .path {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11.5px;
+  font: var(--dsw-font-xxs-12);
+  font-family: var(--ds-font-family-code);
   color: var(--dsw-alias-label-secondary);
   overflow-wrap: anywhere;
 }
@@ -134,8 +144,8 @@
   flex-direction: column;
   gap: 8px;
   padding: 12px 14px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
+  border: .5px solid var(--dsw-alias-border-l2);
+  border-radius: var(--dsw-radius-lg);
 }
 
 .browserList {
@@ -149,10 +159,10 @@
 .browserEntry {
   padding: 5px 8px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--dsw-radius-sm);
   background: transparent;
   color: var(--dsw-alias-label-secondary);
-  font-size: 12px;
+  font: var(--dsw-font-xxs-12);
   text-align: left;
   overflow-wrap: anywhere;
   cursor: pointer;
@@ -167,19 +177,135 @@
 
 .hint {
   margin: 0;
-  font-size: 12px;
+  font: var(--dsw-font-xxs-12);
   color: var(--dsw-alias-label-tertiary);
+}
+
+/* The last action's outcome: a success line, or a failure with the reason and
+   the action to run again. */
+.noticeRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
 }
 
 .notice {
   margin: 0;
-  font-size: 12px;
+  font: var(--dsw-font-xxs-12);
   color: var(--dsw-alias-label-secondary);
   overflow-wrap: anywhere;
 }
 
+.notice[data-tone='success'] {
+  color: var(--dsw-alias-state-success-primary);
+}
+
+.notice[data-tone='error'] {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.errorReason {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* A read that failed with nothing to show: the reason and a way to read again. */
+.errorRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 12px 14px;
+  border: .5px solid var(--dsw-alias-border-l2);
+  border-radius: var(--dsw-radius-lg);
+}
+
+.errorRow p {
+  margin: 0;
+  font: var(--dsw-font-xxs-12);
+  color: var(--dsw-alias-state-error-primary);
+  overflow-wrap: anywhere;
+}
+
+/* ---- First read ---- */
+
+/* The report's own box, so the rows land where the bones were. */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: .5px solid var(--dsw-alias-border-l2);
+  border-radius: var(--dsw-radius-lg);
+}
+
+.skeletonRow {
+  display: block;
+  height: 18px;
+  border-radius: var(--dsw-radius-xs);
+  background: var(--dsw-alias-bg-skeleton);
+}
+
+.skeletonEditor {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 180px;
+  border-radius: var(--dsw-radius-lg);
+  background: var(--dsw-alias-bg-skeleton);
+}
+
 .unavailable {
   margin: 0;
-  font-size: 13px;
+  font: var(--dsw-font-xs-13);
   color: var(--dsw-alias-label-tertiary);
+}
+
+/*
+ * Compact layout follows the column the section is given, not the window: the
+ * settings panel's category rail makes the content column narrower than the
+ * window, and the report's label/value rows stop fitting side by side.
+ */
+@container memory-section (max-width: 420px) {
+  .stateRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .stateKey {
+    flex: none;
+  }
+  .noticeRow,
+  .errorRow {
+    align-items: flex-start;
+  }
+}
+
+/*
+ * Touch sizing follows the pointing device, not the viewport: a coarse pointer
+ * gets 44px targets — the host's Switch is 36x20, so the whole row carries the
+ * press — and 16px field text so a phone does not zoom on focus.
+ */
+@media (pointer: coarse) {
+  .switchRow {
+    min-height: 44px;
+    cursor: pointer;
+  }
+  .actions > * {
+    min-height: 44px;
+  }
+  .browserEntry {
+    min-height: 44px;
+  }
+  /* The Input primitive's wrapper is 32px, so a 44px target grows the field. */
+  .input {
+    min-height: 44px;
+  }
+  .input input,
+  .editor {
+    font-size: 16px;
+    line-height: 24px;
+  }
 }

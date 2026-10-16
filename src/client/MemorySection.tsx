@@ -4,12 +4,14 @@
  * The page is the memory plugin's whole operator surface: it turns memory on or
  * off, points the directory at any folder (including a Claude Code `memory/`
  * directory), chooses which project's store the report and the editor describe,
- * and edits the `MEMORY.md` index a session loads.
+ * and edits the `MEMORY.md` index a session loads. Every write reports which
+ * action is running and how the last one ended, so a slow Host is visible and a
+ * failure keeps both the data and a way to run the action again.
  *
  * @module @guowenzhang/dsh-memory/client/MemorySection
  */
 
-import { useState, type ReactNode } from 'react'
+import { useState, type MouseEvent, type ReactNode } from 'react'
 import { Button, Input, Menu, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { DirectoryListing } from '@deepseek-ai/dsh-host-directory-picker/types'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -52,10 +54,59 @@ function StateRow({ label, value, title }: {
   )
 }
 
+/**
+ * One switch with its copy: the row is a press area in its own right, because
+ * the host's control is 36x20 and a finger misses it on a phone. A press that
+ * lands on a control keeps that control's own behaviour.
+ */
+function SwitchRow({ label, desc, checked, disabled, title, onChange }: {
+  readonly label: string
+  readonly desc: string
+  readonly checked: boolean
+  readonly disabled: boolean
+  readonly title: string | undefined
+  readonly onChange: (value: boolean) => void
+}): ReactNode {
+  const press = (event: MouseEvent<HTMLDivElement>): void => {
+    if (event.target instanceof HTMLElement && event.target.closest('button, input, select, textarea, a') !== null) return
+    if (!disabled) onChange(!checked)
+  }
+  return (
+    <div className={css.switchRow} onClick={press}>
+      <span className={css.switchText}>
+        <span className={css.switchLabel}>{label}</span>
+        <span className={css.switchDesc}>{desc}</span>
+      </span>
+      <Switch checked={checked} onChange={onChange} label={label} disabled={disabled} title={title} />
+    </div>
+  )
+}
+
+/** First read of the report, in the place its rows will occupy. */
+function StateSkeleton({ t }: { readonly t: Translate }): ReactNode {
+  return (
+    <div className={css.skeleton} role="status" aria-busy="true" aria-label={t('status.loading')}>
+      {[0, 1, 2, 3].map(index => <span key={index} className={css.skeletonRow} aria-hidden="true" />)}
+    </div>
+  )
+}
+
 /** The directory report the Host answered with. */
-function StateBlock({ state, t }: { readonly state: MemorySectionState; readonly t: Translate }): ReactNode {
-  if (state.status.kind === 'loading') return <p className={css.hint}>{t('status.loading')}</p>
-  if (state.status.kind === 'error') return <p className={css.notice}>{state.status.message}</p>
+function StateBlock({ state, t, retry }: {
+  readonly state: MemorySectionState
+  readonly t: Translate
+  readonly retry: () => void
+}): ReactNode {
+  if (state.status.kind === 'loading') return <StateSkeleton t={t} />
+  // A read with nothing to show: the sentence, the Host's reason, and the read
+  // again. A read that failed with a report already on screen keeps that report
+  // and reports itself as the action notice instead.
+  if (state.status.kind === 'error') {
+    return <div className={css.errorRow} role="alert">
+      <p>{t('status.error')}<span className={css.errorReason}>{` · ${state.status.message}`}</span></p>
+      <Button variant="outline" disabled={state.busy !== ''} onClick={retry}>{t('retry')}</Button>
+    </div>
+  }
   const report = state.status.value
   const index = report.index
   return (
@@ -100,8 +151,12 @@ function Browser({ state, t, browse, use, close }: {
   return (
     <div className={css.browser}>
       <span className={css.fieldLabel}>{t('browser.title')}</span>
-      {state.browser.kind === 'loading' ? <p className={css.hint}>{t('status.loading')}</p> : null}
-      {state.browser.kind === 'error' ? <p className={css.notice}>{state.browser.message}</p> : null}
+      {state.browser.kind === 'loading' ? (
+        <div className={css.skeleton} role="status" aria-busy="true" aria-label={t('status.loading')}>
+          {[0, 1, 2].map(index => <span key={index} className={css.skeletonRow} aria-hidden="true" />)}
+        </div>
+      ) : null}
+      {state.browser.kind === 'error' ? <p className={css.notice} role="alert">{state.browser.message}</p> : null}
       {state.browser.kind === 'ready' ? (
         <BrowserListing
           listing={state.browser.listing}
@@ -175,7 +230,7 @@ function TargetPicker({ state, t, select }: {
         <Menu
           open={open}
           anchor={(
-            <Button variant="outline" onClick={() => { setOpen(value => !value) }}>
+            <Button variant="outline" disabled={state.busy !== ''} onClick={() => { setOpen(value => !value) }}>
               {selected?.label ?? t('targets.current')}
             </Button>
           )}
@@ -198,44 +253,40 @@ export function MemorySection(props: MemorySectionProps): ReactNode {
   const { useMemory, t } = props
   const state = useMemory(snapshot => snapshot)
   const disabled = !state.available || !state.writable
+  const idle = disabled || state.busy !== ''
   const indexDirty = state.index.kind === 'ready' && state.index.content !== state.index.saved
 
   return (
     <div className={css.section}>
       <div className={css.panel}>
-        <div className={css.switchRow}>
-          <span className={css.switchText}>
-            <span className={css.switchLabel}>{t('enable.label')}</span>
-            <span className={css.switchDesc}>{t('enable.desc')}</span>
-          </span>
-          <Switch
-            checked={state.enabled}
-            onChange={value => { props.setEnabled(value) }}
-            label={t('enable.label')}
-            disabled={disabled}
-            title={disabled ? t('unavailable') : undefined}
-          />
-        </div>
+        <SwitchRow
+          label={t('enable.label')}
+          desc={t('enable.desc')}
+          checked={state.enabled}
+          disabled={idle}
+          title={disabled ? t('unavailable') : undefined}
+          onChange={value => { props.setEnabled(value) }}
+        />
 
-        <div className={css.switchRow}>
-          <span className={css.switchText}>
-            <span className={css.switchLabel}>{t('claude.label')}</span>
-            <span className={css.switchDesc}>{t('claude.desc')}</span>
-          </span>
-          <Switch
-            checked={state.claudeCompatible}
-            onChange={value => { props.setClaudeCompatible(value) }}
-            label={t('claude.label')}
-            disabled={disabled}
-            title={disabled ? t('unavailable') : undefined}
-          />
-        </div>
+        <SwitchRow
+          label={t('claude.label')}
+          desc={t('claude.desc')}
+          checked={state.claudeCompatible}
+          disabled={idle}
+          title={disabled ? t('unavailable') : undefined}
+          onChange={value => { props.setClaudeCompatible(value) }}
+        />
 
         {state.claudeCompatible ? null : (
           <>
             <div className={css.field}>
               <span className={css.fieldLabel}>{t('directory.label')}</span>
-              <span className={css.fieldHint}>{t('directory.hint')}</span>
+              <span className={css.fieldHint}>
+                {t('directory.hint')}
+                {state.directory !== state.savedDirectory
+                  ? <span className={css.unsaved}>{` · ${t('directory.unsaved')}`}</span>
+                  : null}
+              </span>
               <div className={css.actions}>
                 <Input
                   className={cls('input')}
@@ -247,12 +298,12 @@ export function MemorySection(props: MemorySectionProps): ReactNode {
                 />
                 <Button
                   variant="outline"
-                  disabled={disabled || state.directory === state.savedDirectory}
+                  disabled={idle || state.directory === state.savedDirectory}
                   onClick={() => { props.saveDirectory() }}
                 >
-                  {t('directory.save')}
+                  {t(state.busy === 'directory' ? 'saving' : 'directory.save')}
                 </Button>
-                <Button variant="outline" disabled={disabled} onClick={() => { props.chooseDirectory() }}>
+                <Button variant="outline" disabled={idle} onClick={() => { props.chooseDirectory() }}>
                   {t('directory.choose')}
                 </Button>
               </div>
@@ -270,31 +321,61 @@ export function MemorySection(props: MemorySectionProps): ReactNode {
 
         <TargetPicker state={state} t={t} select={props.selectTarget} />
 
-        <StateBlock state={state} t={t} />
+        <StateBlock state={state} t={t} retry={() => { props.refresh() }} />
 
         <div className={css.field}>
           <span className={css.fieldLabel}>{t('index.title')}</span>
           <span className={css.fieldHint}>{t('index.hint')}</span>
-          <textarea
-            className={css.editor}
-            value={state.index.kind === 'ready' ? state.index.content : ''}
-            placeholder={t('index.placeholder')}
-            aria-label={t('index.title')}
-            disabled={disabled || state.index.kind !== 'ready'}
-            spellCheck={false}
-            onChange={event => { props.editIndex(event.target.value) }}
-          />
+          {state.index.kind === 'loading' ? (
+            <span className={css.skeletonEditor} role="status" aria-busy="true" aria-label={t('status.loading')} />
+          ) : null}
+          {/* The draft could not be read: the file is not shown as empty, and the
+              reload control below re-reads it. */}
+          {state.index.kind === 'error' ? (
+            <div className={css.errorRow} role="alert">
+              <p>{t('index.loadFailed')}<span className={css.errorReason}>{` · ${state.index.message}`}</span></p>
+            </div>
+          ) : null}
+          {state.index.kind === 'ready' ? (
+            <textarea
+              className={css.editor}
+              value={state.index.content}
+              placeholder={t('index.placeholder')}
+              aria-label={t('index.title')}
+              disabled={disabled}
+              spellCheck={false}
+              onChange={event => { props.editIndex(event.target.value) }}
+            />
+          ) : null}
           <div className={css.actions}>
-            <Button variant="primary" disabled={disabled || !indexDirty} onClick={() => { props.saveIndex() }}>
-              {t('index.save')}
+            <Button variant="primary" disabled={idle || !indexDirty} onClick={() => { props.saveIndex() }}>
+              {t(state.busy === 'index' ? 'saving' : 'index.save')}
             </Button>
-            <Button variant="ghost" disabled={disabled} onClick={() => { props.refresh() }}>
-              {t('index.reload')}
+            <Button variant="ghost" disabled={idle} onClick={() => { props.reloadIndex() }}>
+              {t(state.busy === 'reload' ? 'refreshing' : 'index.reload')}
             </Button>
           </div>
         </div>
 
-        {state.notice !== null ? <p className={css.notice}>{state.notice}</p> : null}
+        {/* The last action's outcome: what it was, why it failed, and the action
+            again. A failure keeps the data above it untouched. */}
+        {state.notice !== null ? (
+          <div className={css.noticeRow}>
+            <p
+              className={css.notice}
+              data-tone={state.notice.tone}
+              role={state.notice.tone === 'error' ? 'alert' : 'status'}
+            >
+              {state.notice.tone === 'success' ? t(state.notice.key) : t('error.action')}
+              {state.notice.tone === 'error'
+                ? <span className={css.errorReason}>{` · ${state.notice.message}`}</span>
+                : null}
+            </p>
+            {state.notice.tone === 'error' && state.notice.retry !== null ? (
+              <Button variant="outline" disabled={idle} onClick={() => { props.retryNotice() }}>{t('retry')}</Button>
+            ) : null}
+          </div>
+        ) : null}
         {disabled ? <p className={css.unavailable}>{t('unavailable')}</p> : null}
       </div>
     </div>

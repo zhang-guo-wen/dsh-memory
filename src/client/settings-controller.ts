@@ -5,7 +5,9 @@
  * The section owns one draft per writable value (the directory field and the
  * index editor) and one host report; every action commits through the
  * configuration form or the Remote and then republishes, so what the page shows
- * is what the Host holds.
+ * is what the Host holds. Every action also publishes which write is running
+ * and how the last one ended, so the page can show a running, a succeeded, and
+ * a failed state per action without a second source of truth.
  *
  * @module @guowenzhang/dsh-memory/client/settings-controller
  */
@@ -14,6 +16,7 @@ import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client
 import type { DirectoryListing } from '@deepseek-ai/dsh-host-directory-picker/types'
 import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { MemoryIndexView, MemoryStatusResult, MemoryTargetView } from '../types.ts'
+import type { MemorySectionKey } from './locales.ts'
 
 /** Settings namespace registered Host-side by @guowenzhang/dsh-memory. */
 export const MEMORY_SETTINGS_NS = 'memory'
@@ -44,6 +47,21 @@ export type MemoryBrowserState =
   | { readonly kind: 'ready'; readonly listing: DirectoryListing }
   | { readonly kind: 'error'; readonly message: string }
 
+/** The write the section is running, so the controls it owns can disable themselves. */
+export type MemoryBusy = '' | 'refresh' | 'directory' | 'index' | 'reload' | 'switch' | 'target' | 'browser'
+
+/** The action a failure notice can run again. */
+export type MemoryRetry = 'refresh' | 'directory' | 'index' | 'reload' | 'switch'
+
+/**
+ * How the last action ended: a dictionary key for a success (the words belong to
+ * the section's locale, not to this controller) or the Host's own failure
+ * sentence together with the action to run again.
+ */
+export type MemoryNotice =
+  | { readonly tone: 'success'; readonly key: MemorySectionKey }
+  | { readonly tone: 'error'; readonly message: string; readonly retry: MemoryRetry | null }
+
 /** Snapshot the section renders. */
 export interface MemorySectionState {
   /** Whether the namespace is exposed to this client. */
@@ -64,8 +82,10 @@ export interface MemorySectionState {
   readonly targets: readonly MemoryTargetView[]
   /** Selection id of the project the report describes. */
   readonly target: string
-  /** A one-line result of the last action, shown under the toolbar. */
-  readonly notice: string | null
+  /** The write currently running, or `''` when the section is idle. */
+  readonly busy: MemoryBusy
+  /** The last action's outcome, or null before the first one. */
+  readonly notice: MemoryNotice | null
 }
 
 /** One directory-picking result the Host can answer with. */
@@ -103,8 +123,10 @@ export interface MemorySectionFace {
   editDirectory(value: string): void
   /** Commit the directory field. */
   saveDirectory(): void
-  /** Re-read the Host report and the index. */
+  /** Re-read the Host report and the index, keeping an unsaved index draft. */
   refresh(): void
+  /** Re-read the index file, replacing the draft with what is on disk. */
+  reloadIndex(): void
   /** Show another project's memory store. */
   selectTarget(id: string): void
   /** Edit the index draft without saving it. */
@@ -119,6 +141,8 @@ export interface MemorySectionFace {
   closeBrowser(): void
   /** Commit the browser's current directory as the memory directory. */
   useBrowsed(): void
+  /** Run the action the current failure notice reports, from the notice itself. */
+  retryNotice(): void
 }
 
 /** Owner handle over the namespace, the Remote, and the section snapshot. */
@@ -134,7 +158,10 @@ export class MemorySectionController {
   private claudeCompatible = false
   private targets: readonly MemoryTargetView[] = []
   private target = 'current'
-  private notice: string | null = null
+  private busy: MemoryBusy = ''
+  private notice: MemoryNotice | null = null
+  /** The switch write a failure notice can send again, and what it should write. */
+  private failedSwitch: { field: keyof MemoryFlags; value: unknown } | null = null
 
   /**
    * @param scope - the `memory` configuration form.
@@ -148,7 +175,10 @@ export class MemorySectionController {
     this.unsubscribe = scope.subscribe(() => {
       this.readFlags()
       this.publish()
-      this.refresh()
+      // A settings write re-reads the report in the background: it carries no
+      // busy state of its own, so the write that caused it keeps publishing the
+      // running state and the outcome.
+      void this.load()
     })
     this.readFlags()
     this.publish()
@@ -173,6 +203,7 @@ export class MemorySectionController {
       editDirectory: value => { this.directory = value; this.publish() },
       saveDirectory: () => { this.saveDirectory() },
       refresh: () => { this.refresh() },
+      reloadIndex: () => { this.reloadIndex() },
       selectTarget: id => { this.selectTarget(id) },
       editIndex: value => { this.editIndex(value) },
       saveIndex: () => { this.saveIndex() },
@@ -180,6 +211,7 @@ export class MemorySectionController {
       browse: path => { this.browse(path) },
       closeBrowser: () => { this.browser = { kind: 'closed' }; this.publish() },
       useBrowsed: () => { this.useBrowsed() },
+      retryNotice: () => { this.retryNotice() },
     }
   }
 
@@ -207,6 +239,7 @@ export class MemorySectionController {
       browser: this.browser,
       targets: this.targets,
       target: this.target,
+      busy: this.busy,
       notice: this.notice,
     }
   }
@@ -241,7 +274,7 @@ export class MemorySectionController {
     this.target = id
     this.index = { kind: 'loading' }
     this.publish()
-    void this.refresh()
+    void this.run('target', () => this.load(), 'refresh')
   }
 
   /**
@@ -252,18 +285,25 @@ export class MemorySectionController {
    * what the Host actually holds instead of showing a write that never took.
    */
   private async commit(field: keyof MemoryFlags, value: unknown): Promise<void> {
-    await this.run(async () => { await this.scope.set(field, value) })
+    const accepted = await this.run('switch', async () => { await this.scope.set(field, value) }, 'switch')
+    // A failed write leaves the switch where the Host actually is; the notice's
+    // retry sends the same field again rather than making the user find it.
+    this.failedSwitch = accepted ? null : { field, value }
     this.readFlags()
     this.publish()
   }
 
   private saveDirectory(): void {
     if (!this.canWrite()) return
-    const directory = this.directory.trim()
-    this.savedDirectory = directory
-    this.notice = null
+    this.savedDirectory = this.directory.trim()
     this.publish()
-    void this.commit('directory', directory)
+    void this.run('directory', () => this.commitDirectory(), 'directory')
+  }
+
+  /** Write the directory field's committed value, and report the accepted write. */
+  private async commitDirectory(): Promise<void> {
+    const accepted = await this.scope.set('directory', this.savedDirectory)
+    if (accepted) this.notice = { tone: 'success', key: 'notice.directorySaved' }
   }
 
   private editIndex(content: string): void {
@@ -275,20 +315,26 @@ export class MemorySectionController {
   private saveIndex(): void {
     if (this.index.kind !== 'ready' || !this.canWrite()) return
     const content = this.index.content
-    void this.run(async () => {
+    void this.run('index', async () => {
       await this.host.writeIndex(this.target, content)
-      this.notice = null
-      await this.loadIndex()
-    })
+      this.notice = { tone: 'success', key: 'notice.indexSaved' }
+      await this.loadIndex(true)
+    }, 'index')
+  }
+
+  /** Read the index file, replacing the draft with what is on disk. */
+  private reloadIndex(): void {
+    void this.run('reload', () => this.loadIndex(false), 'reload')
   }
 
   private chooseDirectory(): void {
-    void this.run(async () => {
+    void this.run('browser', async () => {
       const picked = await this.host.pick()
       if (picked.ok) {
         if (picked.value !== null) {
           this.directory = picked.value
-          this.saveDirectory()
+          this.savedDirectory = picked.value.trim()
+          await this.commitDirectory()
         }
         return
       }
@@ -299,7 +345,7 @@ export class MemorySectionController {
   }
 
   private browse(path?: string): void {
-    void this.run(async () => { await this.loadBrowser(path) })
+    void this.run('browser', async () => { await this.loadBrowser(path) }, null)
   }
 
   private useBrowsed(): void {
@@ -310,11 +356,26 @@ export class MemorySectionController {
   }
 
   private refresh(): void {
-    void this.run(async () => {
-      this.targets = await this.loadTargets()
-      this.status = await this.loadStatus()
-      await this.loadIndex()
-    })
+    void this.run('refresh', () => this.load(), 'refresh')
+  }
+
+  /** Run the action the current failure notice reports. */
+  private retryNotice(): void {
+    const retry = this.notice?.tone === 'error' ? this.notice.retry : null
+    if (retry === 'refresh') this.refresh()
+    else if (retry === 'directory') this.saveDirectory()
+    else if (retry === 'index') this.saveIndex()
+    else if (retry === 'reload') this.reloadIndex()
+    else if (retry === 'switch' && this.failedSwitch !== null) {
+      void this.commit(this.failedSwitch.field, this.failedSwitch.value)
+    }
+  }
+
+  /** Read the picker, the report, and the index. */
+  private async load(): Promise<void> {
+    this.targets = await this.loadTargets()
+    await this.loadStatus()
+    await this.loadIndex(true)
   }
 
   private async loadTargets(): Promise<readonly MemoryTargetView[]> {
@@ -330,22 +391,43 @@ export class MemorySectionController {
     }
   }
 
-  private async loadStatus(): Promise<MemoryStatusState> {
+  /**
+   * Read the report.
+   *
+   * A read that fails keeps the last report on screen and reports the failure as
+   * a notice, so a gateway that hiccups once does not replace what the account
+   * already knows with an error page; only a read with nothing to show leaves
+   * the block in its error state.
+   */
+  private async loadStatus(): Promise<void> {
     try {
       const value = await this.host.status(this.target)
       this.target = value.target
-      return { kind: 'ready', value }
+      this.status = { kind: 'ready', value }
     } catch (error: unknown) {
-      return { kind: 'error', message: messageOf(error) }
+      if (this.status.kind !== 'ready') this.status = { kind: 'error', message: messageOf(error) }
+      this.notice = { tone: 'error', message: messageOf(error), retry: 'refresh' }
     }
   }
 
-  private async loadIndex(): Promise<void> {
+  /**
+   * Read the index file.
+   * @param keepDirty - keep an edited draft (a refresh) instead of replacing it
+   * with the file's content (the explicit reload).
+   */
+  private async loadIndex(keepDirty: boolean): Promise<void> {
     try {
-      const index = await this.host.readIndex(this.target)
-      this.index = { kind: 'ready', exists: index.exists, content: index.content, saved: index.content }
+      const file = await this.host.readIndex(this.target)
+      const previous = this.index
+      const draft = keepDirty && previous.kind === 'ready' && previous.content !== previous.saved
+        ? previous.content
+        : file.content
+      this.index = { kind: 'ready', exists: file.exists, content: draft, saved: file.content }
     } catch (error: unknown) {
-      this.index = { kind: 'error', message: messageOf(error) }
+      // Keep the last good draft: a failed re-read must not look like an empty
+      // index, and the reload control re-runs the read.
+      if (this.index.kind !== 'ready') this.index = { kind: 'error', message: messageOf(error) }
+      this.notice = { tone: 'error', message: messageOf(error), retry: 'reload' }
     }
   }
 
@@ -359,16 +441,28 @@ export class MemorySectionController {
     }
   }
 
-  /** Run one action with the section's busy state and error notice around it. */
-  private async run(action: () => Promise<void>): Promise<void> {
+  /**
+   * Run one action with the section's busy state and outcome around it.
+   * @param kind - the write the controls disable themselves for while it runs.
+   * @param action - the Host work.
+   * @param retry - the action a failure notice runs again, or null when the
+   * control that started it is still on screen as its own retry.
+   * @returns whether the action completed without throwing.
+   */
+  private async run(kind: MemoryBusy, action: () => Promise<void>, retry: MemoryRetry | null = null): Promise<boolean> {
+    this.busy = kind
     this.notice = null
     this.publish()
     try {
       await action()
+      return true
     } catch (error: unknown) {
-      this.notice = messageOf(error)
+      this.notice = { tone: 'error', message: messageOf(error), retry }
+      return false
+    } finally {
+      this.busy = ''
+      this.publish()
     }
-    this.publish()
   }
 
   private canWrite(): boolean {

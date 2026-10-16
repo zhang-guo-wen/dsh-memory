@@ -79,6 +79,8 @@ The **Memory directory template** field decides where the store lives; `~` is yo
 
 **Choose directory…** opens the OS picker when the host composes one and the in-app directory browser otherwise; typing a path into the field works everywhere. Beside it, **Directory state** reports the directory the current project resolves to, the index's lines and bytes, the file count and total size, and the file cap.
 
+Every write says what it is doing: the control that started it shows a running label, a success line follows, and a failure keeps everything the page already showed, names the reason, and offers the action again. The directory field marks a draft that differs from what the host holds. **Reload** re-reads `MEMORY.md` from disk and replaces an unsaved draft; a refresh caused by another setting keeps the draft.
+
 ### Share Claude Code's own directory
 
 **Use Claude's directory is off by default.** While it is off, memory lives in your own directory, which you choose and can change at any time; while it is on, there is no directory to choose — the store is Claude Code's `~/.claude/projects/<project>/memory`, shared with Claude itself. Turning it back off returns you to the directory you had configured.
