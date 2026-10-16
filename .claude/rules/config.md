@@ -1,6 +1,13 @@
-# 配置字段与目录解析
+---
+paths:
+  - "src/settings.ts"
+  - "src/targets.ts"
+  - "package.json"
+---
 
-**何时读我**：要改 `src/settings.ts` 的字段、回答「记忆目录在哪、怎么改」，或核对默认值与上限时读本文件。逐字段使用说明见 [`docs/implementation.zh.md`](../docs/implementation.zh.md) 的「使用」章。
+> 覆盖什么、何时读：要改 `src/settings.ts` 的字段、回答「记忆目录在哪、怎么改」，或核对默认值与上限时读本文件。逐字段使用说明见 [`docs/implementation.zh.md`](../../docs/implementation.zh.md) 的「使用」章。
+
+# 配置字段与目录解析
 
 ## 配置
 

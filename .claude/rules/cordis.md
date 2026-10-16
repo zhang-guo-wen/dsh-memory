@@ -1,6 +1,14 @@
-# 插件契约（Cordis）与 Typert Remote
+---
+paths:
+  - "src/remote.ts"
+  - "src/typert.ts"
+  - "src/types.ts"
+  - "src/client/index.ts"
+---
 
-**何时读我**：动 host 插件导出的形状、加依赖服务、改设置页 RPC（新增/修改 Remote 方法）时读本文件——这里的每条都对应一个「漏了就崩」的接线点。
+> 覆盖什么、何时读：动 host 插件导出的形状、加依赖服务、改设置页 RPC（新增/修改 Remote 方法）时读本文件——这里的每条都对应一个「漏了就崩」的接线点。
+
+# 插件契约（Cordis）与 Typert Remote
 
 ## 插件契约（Cordis）
 

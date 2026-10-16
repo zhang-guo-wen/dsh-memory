@@ -1,6 +1,13 @@
-# 存储格式、命令契约与路径边界
+---
+paths:
+  - "src/store.ts"
+  - "src/paths.ts"
+  - "tests/store.spec.ts"
+---
 
-**何时读我**：改 `src/store.ts` / `src/paths.ts`，或排查写入失败、索引加载不全、路径越界、容量上限时读本文件。六个命令的逐条行为与必填字段见 [`docs/implementation.zh.md`](../docs/implementation.zh.md) 的「使用」章。
+> 覆盖什么、何时读：改 `src/store.ts` / `src/paths.ts`，或排查写入失败、索引加载不全、路径越界、容量上限时读本文件。六个命令的逐条行为与必填字段见 [`docs/implementation.zh.md`](../../docs/implementation.zh.md) 的「使用」章。
+
+# 存储格式、命令契约与路径边界
 
 ## 存储格式
 

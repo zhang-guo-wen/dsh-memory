@@ -1,6 +1,12 @@
-# 注入策略与来源 kind 迁移
+---
+paths:
+  - "src/instructions.ts"
+  - "tests/instructions.spec.ts"
+---
 
-**何时读我**：改 `src/instructions.ts`、动会话注入时机或消息来源，或排查「注入重复 / 注入没进日志 / 恢复的旧会话认不出」时读本文件。
+> 覆盖什么、何时读：改 `src/instructions.ts`、动会话注入时机或消息来源，或排查「注入重复 / 注入没进日志 / 恢复的旧会话认不出」时读本文件。
+
+# 注入策略与来源 kind 迁移
 
 ## 注入时机
 

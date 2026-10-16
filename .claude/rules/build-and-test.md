@@ -1,6 +1,17 @@
-# 构建与测试
+---
+paths:
+  - "package.json"
+  - "build-client.mjs"
+  - "tsdown.config.ts"
+  - "vitest.config.ts"
+  - "vitest.harness.config.ts"
+  - "tsconfig.json"
+  - "tests/**"
+---
 
-**何时读我**：改构建配置、升级 harness 版本、排查产物异常，或要跑测试并判断该跑哪条命令时读本文件。逐 spec 覆盖范围见 [tests/README.md](../tests/README.md)。
+> 覆盖什么、何时读：改构建配置、升级 harness 版本、排查产物异常，或要跑测试并判断该跑哪条命令时读本文件。逐 spec 覆盖范围见 [tests/README.md](../../tests/README.md)。
+
+# 构建与测试
 
 ## 构建
 
@@ -34,4 +45,4 @@ node_modules/.bin/vitest run --root dsh-memory --config vitest.harness.config.ts
 node_modules/.bin/vitest run --root dsh-memory
 ```
 
-全量覆盖 `store.spec.ts` / `settings.spec.ts` / `instructions.spec.ts` / `tool.spec.ts` / `loader-composition.spec.ts` / `memory-section.spec.tsx` / `settings-controller.spec.ts` 七个 spec；自足子集只有前四个——`loader-composition.spec.ts` 需要 checkout 的 Loader 与注册表包，`memory-section.spec.tsx` 需要 React，`settings-controller.spec.ts` 要 `dsh-client-store` 的 Zustand 引擎。逐项覆盖范围见 [tests/README.md](../tests/README.md)。
+全量覆盖 `store.spec.ts` / `settings.spec.ts` / `instructions.spec.ts` / `tool.spec.ts` / `loader-composition.spec.ts` / `memory-section.spec.tsx` / `settings-controller.spec.ts` 七个 spec；自足子集只有前四个——`loader-composition.spec.ts` 需要 checkout 的 Loader 与注册表包，`memory-section.spec.tsx` 需要 React，`settings-controller.spec.ts` 要 `dsh-client-store` 的 Zustand 引擎。逐项覆盖范围见 [tests/README.md](../../tests/README.md)。

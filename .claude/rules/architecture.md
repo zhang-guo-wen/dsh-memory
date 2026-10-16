@@ -1,6 +1,15 @@
-# 目录、模块与组合接线
+---
+paths:
+  - "src/index.ts"
+  - "src/client/index.ts"
+  - "cordis.patch.yml"
+  - "package.json"
+  - "lib/**"
+---
 
-**何时读我**：要判断一段改动该落在哪个模块、确认 `lib/` 产物的形态，或核对 `cordis.patch.yml` 与 `package.json` 的组合接线时读本文件。
+> 覆盖什么、何时读：要判断一段改动该落在哪个模块、确认 `lib/` 产物的形态，或核对 `cordis.patch.yml` 与 `package.json` 的组合接线时读本文件。
+
+# 目录、模块与组合接线
 
 ## 目录
 
